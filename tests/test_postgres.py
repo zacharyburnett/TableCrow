@@ -1,6 +1,5 @@
 from datetime import datetime
 import os
-from pathlib import Path
 import unittest
 
 import psycopg2
@@ -11,9 +10,9 @@ from shapely.ops import unary_union
 
 from tablecrow.postgres import PostGresTable, database_has_table, database_table_fields
 from tablecrow.table import split_URL_port
-from tablecrow.utilities import read_configuration
+from tablecrow.utilities import read_configuration, repository_root
 
-CREDENTIALS_FILENAME = Path.cwd().parent / 'credentials.config'
+CREDENTIALS_FILENAME = repository_root() / 'credentials.config'
 
 
 class TestPostGresTable(unittest.TestCase):
