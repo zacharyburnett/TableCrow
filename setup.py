@@ -23,6 +23,5 @@ setup(
             'sshtunnel'
         ],
         extras_require={'dev': ['coverage', 'flake8', 'nose']},
-        entry_points={'console_scripts': ['packetraven=client.cli:main']},
         test_suite='nose.collector'
 )

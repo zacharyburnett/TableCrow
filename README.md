@@ -5,14 +5,12 @@
 [![version](https://img.shields.io/pypi/v/tablecrow)](https://pypi.org/project/tablecrow)
 [![license](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-TableCrow is an abstraction library over a generalized database table.
+`tablecrow` is an abstraction library over a generalized database table.
+Currently, `tablecrow` offers an abstraction for PostGreSQL tables with simple PostGIS operations. 
 
 ```bash
 pip install tablecrow
 ```
-
-## Database Implementations
-- PostGreSQL w/ PostGIS
 
 ## Python API:
 ```python
