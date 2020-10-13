@@ -15,15 +15,44 @@ pip install tablecrow
 - PostGreSQL w/ PostGIS
 
 ## Python API:
-create new PostGres database table at the specified location:
 ```python
-from packetraven import APRSfi
+from datetime import datetime
 
-callsigns = ['W3EAX-8', 'W3EAX-12', 'KC3FXX', 'KC3ZRB']
-api_key = '<api_key>' # enter your APRS.fi API key here - you can get one from https://aprs.fi/page/api
+from tablecrow import PostGresTable
 
-aprs_fi = APRSfi(callsigns, api_key)
-aprs_fi_packets = aprs_fi.packets
 
-print(aprs_fi_packets)
+hostname = 'localhost:5432'
+database = 'postgres'
+table = 'test'
+
+username = 'postgres'
+password = '<password>'
+
+# parameters for an SSH tunnel
+ssh_hostname = None
+ssh_username = None
+ssh_password = None
+
+fields = {
+    'id'    : int,
+    'time'  : datetime,
+    'length': float,
+    'name'  : str
+}
+
+table = PostGresTable(hostname, database, table, fields, username=username, password=password,
+        ssh_hostname=ssh_hostname, ssh_username=ssh_username, ssh_password=ssh_password)
+
+table.insert([
+    {'id': 1, 'time': datetime(2020, 1, 1), 'length': 4.4, 'name': 'long boi'},
+    {'id': 3, 'time': datetime(2020, 1, 3), 'length': 2, 'name': 'short boi'},
+    {'id': 2, 'time': datetime(2020, 1, 2)}
+])
+
+table[4] = {'time': datetime(2020, 1, 4), 'length': 5, 'name': 'long'}
+
+record_with_id_3 = table[3]
+short_records = table.records_where({'name': 'short boi'})
+long_records = table.records_where({'name': '%long%'})
+early_records = table.records_where("time <= '20200102'::date")
 ```

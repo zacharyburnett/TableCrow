@@ -40,7 +40,9 @@ class DatabaseTable(ABC):
             username, hostname = hostname.split('@', 1)
         if ':' in username:
             username, password = username.split(':', 1)
-        if not isinstance(primary_key, Sequence) or isinstance(primary_key, str):
+        if primary_key is None:
+            primary_key = [list(fields)[0]]
+        elif not isinstance(primary_key, Sequence) or isinstance(primary_key, str):
             primary_key = [primary_key]
         if users is None:
             users = []

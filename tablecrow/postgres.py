@@ -40,7 +40,7 @@ class PostGresTable(DatabaseTable):
         self.crs = crs if crs is not None else DEFAULT_CRS
 
         connector = partial(psycopg2.connect, database=self.database, user=self.username, password=self.password)
-        if 'ssh_hostname' in kwargs:
+        if 'ssh_hostname' in kwargs and kwargs['ssh_hostname'] is not None:
             ssh_hostname, ssh_port = split_URL_port(kwargs['ssh_hostname'])
             if ssh_port is None:
                 ssh_port = SSH_DEFAULT_PORT
