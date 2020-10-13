@@ -31,11 +31,11 @@ class TestPostGresTable(unittest.TestCase):
                 'password': os.environ['POSTGRES_PASSWORD']
             }
             if 'ssh_hostname' in os.environ:
-                credentials['database']['ssh_hostname'] = os.environ['ssh_hostname']
+                credentials['database']['ssh_hostname'] = os.environ['SSH_HOSTNAME']
             if 'ssh_username' in os.environ:
-                credentials['database']['ssh_username'] = os.environ['ssh_username']
+                credentials['database']['ssh_username'] = os.environ['SSH_USERNAME']
             if 'ssh_password' in os.environ:
-                credentials['database']['ssh_password'] = os.environ['ssh_password']
+                credentials['database']['ssh_password'] = os.environ['SSH_PASSWORD']
 
         self.hostname = credentials['database']['hostname']
         self.database = credentials['database']['database']
