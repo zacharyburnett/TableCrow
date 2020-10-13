@@ -56,11 +56,8 @@ class DatabaseTable(ABC):
         self.__fields = fields
         self.__primary_key = primary_key
 
-        self.__username = None
-        if username is not None:
-            self.__username = username
-        if password is not None:
-            self.__password = password
+        self.__username = username
+        self.__password = password
 
         self.__users = users
 

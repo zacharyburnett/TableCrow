@@ -2,7 +2,7 @@ from datetime import date, datetime
 from functools import partial
 from logging import Logger
 import re
-from typing import Any, Sequence, Union
+from typing import Any, Generator, Sequence, Union
 
 import psycopg2
 from pyproj import CRS
@@ -57,8 +57,7 @@ class PostGresTable(DatabaseTable):
 
             self.tunnel = SSHTunnelForwarder((ssh_hostname, ssh_port),
                     ssh_username=ssh_username, ssh_password=ssh_password,
-                    remote_bind_address=('localhost', self.port),
-                    local_bind_address=('localhost', random_open_tcp_port()))
+                    remote_bind_address=('localhost', self.port), local_bind_address=('localhost', random_open_tcp_port()))
             try:
                 self.tunnel.start()
             except Exception as error:
@@ -100,7 +99,7 @@ class PostGresTable(DatabaseTable):
                                     if local_field == previous_field:
                                         local_fields[field] = field_type
 
-                                self.__fields = local_fields
+                                self._DatabaseTable__fields = local_fields
 
                         local_fields_not_in_remote_table = {field: value for field, value in self.fields.items()
                                                             if field not in remote_fields}
@@ -123,14 +122,14 @@ class PostGresTable(DatabaseTable):
                             cursor.execute(f'ALTER TABLE {self.table} RENAME TO {copy_table_name};')
 
                             cursor.execute(f'CREATE TABLE {self.table} ({self.schema});')
-                            for user in users:
+                            for user in self.users:
                                 cursor.execute(f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.table} TO {user};')
 
                             cursor.execute('SELECT column_name FROM information_schema.columns WHERE table_name=%s;',
-                                    [f'{copy_table_name}'])
-                            column_names = [record[0] for record in cursor.fetchall()]
+                                    [copy_table_name])
+                            copy_table_fields = [record[0] for record in cursor.fetchall()]
 
-                            cursor.execute(f'INSERT INTO {self.table} ({", ".join(column_names)}) '
+                            cursor.execute(f'INSERT INTO {self.table} ({", ".join(copy_table_fields)}) '
                                            f'SELECT * FROM {copy_table_name};')
 
                             cursor.execute(f'DROP TABLE {copy_table_name};')
@@ -138,7 +137,7 @@ class PostGresTable(DatabaseTable):
                     self.logger.debug(f'creating remote table "{self.database}/{self.table}"')
                     cursor.execute(f'CREATE TABLE {self.table} ({self.schema});')
 
-                    for user in users:
+                    for user in self.users:
                         cursor.execute(f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.table} TO {user};')
 
     @property
@@ -211,38 +210,52 @@ class PostGresTable(DatabaseTable):
         :return: dictionaries of matching records
         """
 
-        matching_records = []
-
         if not self.connected:
             raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
 
-        with self.connection:
-            with self.connection.cursor() as cursor:
-                cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.table}')
-                records = cursor.fetchall()
-
-        records = [parse_record_values(dict(zip(self.fields.keys(), record)), self.fields) for record in records]
-
-        if where is None:
-            matching_records = records
+        if where is None or len(where) == 0:
+            with self.connection:
+                with self.connection.cursor() as cursor:
+                    cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.table}')
+                    matching_records = cursor.fetchall()
         else:
+            where_values = []
+            if isinstance(where, str):
+                where_clause = where
+            elif isinstance(where, dict):
+                where_clause = []
+                for key, value in where.items():
+                    value_is_list = type(value) in [list, tuple, range, slice]
+                    value = value if not value_is_list else tuple(value)
+                    if value is None:
+                        statement = f'{key} IS %s'
+                    elif value_is_list:
+                        statement = f'{key} IN %s'
+                    elif type(value) is str and '%' in value:
+                        statement = f'{key} ILIKE %s'
+                    else:
+                        statement = f'{key} = %s'
+                    where_values.append(value)
+                    where_clause.append(statement)
+                where_clause = ' AND '.join(where_clause)
+            elif isinstance(where, Sequence):
+                where_clause = ' AND '.join(where)
+            else:
+                raise NotImplementedError(f'unsupported query type {type(where)}')
+
+            if len(where_values) == 0:
+                where_values = None
+
             try:
-                for record in records:
-                    match = True
-                    for key, value in where.items():
-                        if key in record:
-                            record_value = record[key]
-                            if type(value) in [tuple, list, slice, range]:
-                                if record_value not in value:
-                                    match = False
-                            elif value != record_value if value is not None else value is not record_value:
-                                match = False
-                        else:
-                            match = False
-                    if match:
-                        matching_records.append(record)
-            except KeyError:
-                self.logger.warning(f'no records found with given constraints: {where}')
+                with self.connection:
+                    with self.connection.cursor() as cursor:
+                        cursor.execute(f'SELECT * FROM {self.table} WHERE {where_clause}', where_values)
+                        matching_records = cursor.fetchall()
+            except psycopg2.errors.UndefinedColumn as error:
+                raise KeyError(error)
+
+        matching_records = [parse_record_values(dict(zip(self.fields.keys(), record)), self.fields)
+                            for record in matching_records]
 
         return matching_records
 
@@ -302,7 +315,7 @@ class PostGresTable(DatabaseTable):
                                 [tuple(values)])
 
                     if len(geometry_fields) > 0:
-                        geometries = {field: record[field] for field in geometry_fields}
+                        geometries = {field: record[field] for field in geometry_fields if record[field] is not None}
 
                         for field, geometry in geometries.items():
                             cursor.execute(f'UPDATE {self.table} SET {field} = ST_GeomFromWKB(%s::geometry, %s) '
@@ -341,7 +354,9 @@ class PostGresTable(DatabaseTable):
         return [parse_record_values(dict(zip(self.fields.keys(), record)), self.fields) for record in records]
 
     def __contains__(self, key: Any) -> bool:
-        if not isinstance(key, Sequence) or isinstance(key, str):
+        if isinstance(key, Generator):
+            key = tuple(key)
+        elif not isinstance(key, Sequence) or isinstance(key, str):
             key = [key]
 
         if not self.connected:
