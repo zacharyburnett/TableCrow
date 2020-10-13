@@ -39,7 +39,6 @@ class TestPostGresTable(unittest.TestCase):
 
         self.hostname = credentials['database']['hostname']
         self.database = credentials['database']['database']
-        self.table = credentials['database']['table']
         self.username = credentials['database']['username']
         self.password = credentials['database']['password']
 
