@@ -42,6 +42,6 @@ jobs:
           SSH_HOSTNAME: ${{ secrets.SSH_HOSTNAME }}
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
           SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
-        run: coverage run --source tablecrow -m nose --nologcapture --verbose
+        run: coverage run --source tablecrow -m nose --nologcapture --verbose --ignore-files="test_postgres\.py"
       - name: Generate coverage report
         run: coverage report -m
