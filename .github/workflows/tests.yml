@@ -8,11 +8,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
         python-version: [ 3.6, 3.7, 3.8 ]
     services:
       postgres:
-        image: postgis/postgis:13
+        image: postgis/postgis:12
         env:
           POSTGRES_PASSWORD: test_password
           POSTGRES_DB: test_database
