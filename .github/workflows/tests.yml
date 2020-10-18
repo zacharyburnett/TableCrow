@@ -8,8 +8,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        os: [ ubuntu-latest ]
         python-version: [ 3.6, 3.7, 3.8 ]
+    services:
+      postgres:
+        image: postgis/postgis:10-2.5
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_database
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -35,13 +44,10 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Test with coverage
         env:
-          POSTGRES_HOSTNAME: ${{ secrets.POSTGRES_HOSTNAME }}
-          POSTGRES_DATABASE: ${{ secrets.POSTGRES_DATABASE }}
-          POSTGRES_USERNAME: ${{ secrets.POSTGRES_USERNAME }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          SSH_HOSTNAME: ${{ secrets.SSH_HOSTNAME }}
-          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
-        run: coverage run --source tablecrow -m nose --nologcapture --verbose --ignore-files="test_postgres\.py"
+          POSTGRES_HOSTNAME: localhost
+          POSTGRES_DATABASE: test_database
+          POSTGRES_USERNAME: postgres
+          POSTGRES_PASSWORD: test_password
+        run: coverage run --source tablecrow -m nose --nologcapture --verbose
       - name: Generate coverage report
         run: coverage report -m

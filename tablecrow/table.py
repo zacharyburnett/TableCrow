@@ -109,7 +109,16 @@ class DatabaseTable(ABC):
     @property
     def geometry_fields(self) -> {str: type}:
         """ local fields with geometry type """
-        return {field: field_type for field, field_type in self.fields.items() if field_type.__name__ in GEOMETRY_TYPES}
+        geometry_fields = {}
+        for field, field_type in self.fields.items():
+            while isinstance(field_type, Sequence) and not isinstance(field_type, str):
+                if len(field_type) > 0:
+                    field_type = field_type[0]
+                else:
+                    field_type = list
+            if field_type.__name__ in GEOMETRY_TYPES:
+                geometry_fields[field] = field_type
+        return geometry_fields
 
     @property
     def remote_fields(self) -> {str: type}:
@@ -217,10 +226,6 @@ class DatabaseTable(ABC):
         return f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.table)}, ' \
                f'{repr(self.fields)}, {repr(self.primary_key)}, ' \
                f'{repr(self.username)}, {repr(re.sub(".", "*", self.password))}, {repr(self.users)})'
-
-
-class InheritedTableError(Exception):
-    pass
 
 
 def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: Any}:
