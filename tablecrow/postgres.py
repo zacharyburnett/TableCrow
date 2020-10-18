@@ -9,7 +9,7 @@ from pyproj import CRS
 from shapely.geometry.base import BaseGeometry, GEOMETRY_TYPES
 from sshtunnel import SSHTunnelForwarder
 
-from .table import DatabaseTable, InheritedTableError, parse_record_values, random_open_tcp_port, split_URL_port
+from .table import DatabaseTable, parse_record_values, random_open_tcp_port, split_URL_port
 
 DEFAULT_CRS = CRS.from_epsg(4326)
 SSH_DEFAULT_PORT = 22
@@ -74,8 +74,8 @@ class PostGresTable(DatabaseTable):
             with self.connection.cursor() as cursor:
                 if database_has_table(cursor, self.table):
                     if database_table_is_inherited(cursor, self.table):
-                        raise InheritedTableError(f'inheritance of table "{self.database}/{self.table}" '
-                                                  f'will cause unexpected behaviour; aborting')
+                        raise RuntimeError(f'inheritance of table "{self.database}/{self.table}" '
+                                           f'will cause unexpected behaviour; aborting')
 
                     remote_fields = self.remote_fields
                     if list(remote_fields) != list(self.fields):
@@ -147,8 +147,11 @@ class PostGresTable(DatabaseTable):
         schema = []
         for field, field_type in self.fields.items():
             dimensions = 0
-            while type(field_type) is list:
-                field_type = field_type[0]
+            while isinstance(field_type, Sequence) and not isinstance(field_type, str):
+                if len(field_type) > 0:
+                    field_type = field_type[0]
+                else:
+                    field_type = list
                 dimensions += 1
 
             schema.append(f'{field} {self.FIELD_TYPES[field_type.__name__]}{"[]" * dimensions}')
@@ -210,6 +213,9 @@ class PostGresTable(DatabaseTable):
         :return: dictionaries of matching records
         """
 
+        if where is not None and not isinstance(where, Sequence) and not isinstance(where, dict):
+            raise NotImplementedError(f'unsupported query type "{type(where)}"')
+
         if not self.connected:
             raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
 
@@ -224,24 +230,24 @@ class PostGresTable(DatabaseTable):
                 where_clause = where
             elif isinstance(where, dict):
                 where_clause = []
-                for key, value in where.items():
-                    value_is_list = type(value) in [list, tuple, range, slice]
-                    value = value if not value_is_list else tuple(value)
-                    if value is None:
-                        statement = f'{key} IS %s'
-                    elif value_is_list:
-                        statement = f'{key} IN %s'
-                    elif type(value) is str and '%' in value:
-                        statement = f'{key} ILIKE %s'
+                for field, value in where.items():
+                    field_type = self.fields[field]
+                    if isinstance(field_type, list):
+                        statement = f'%s = ANY({field})'
+                    elif value is None:
+                        statement = f'{field} IS %s'
+                    elif isinstance(value, Sequence) and not isinstance(value, str):
+                        statement = f'{field} IN %s'
+                        value = tuple(value)
+                    elif isinstance(value, str) and '%' in value:
+                        statement = f'{field} ILIKE %s'
                     else:
-                        statement = f'{key} = %s'
+                        statement = f'{field} = %s'
                     where_values.append(value)
                     where_clause.append(statement)
                 where_clause = ' AND '.join(where_clause)
-            elif isinstance(where, Sequence):
-                where_clause = ' AND '.join(where)
             else:
-                raise NotImplementedError(f'unsupported query type {type(where)}')
+                where_clause = ' AND '.join(where)
 
             if len(where_values) == 0:
                 where_values = None
@@ -253,6 +259,8 @@ class PostGresTable(DatabaseTable):
                         matching_records = cursor.fetchall()
             except psycopg2.errors.UndefinedColumn as error:
                 raise KeyError(error)
+            except psycopg2.errors.SyntaxError as error:
+                raise SyntaxError(f'invalid SQL syntax - {error}')
 
         matching_records = [parse_record_values(dict(zip(self.fields.keys(), record)), self.fields)
                             for record in matching_records]
@@ -266,13 +274,11 @@ class PostGresTable(DatabaseTable):
         :param records: dictionary records
         """
 
-        if type(records) is dict:
+        if isinstance(records, dict):
             records = [records]
 
-        assert all(primary_key in record for primary_key in self.primary_key for record in records), \
-            f'one or more records does not contain primary key(s) "{self.primary_key}"'
-
-        records = [record for record in records if (record[key] for key in self.primary_key) not in self]
+        if not all(field in record for field in self.primary_key for record in records):
+            raise KeyError(f'one or more records does not contain primary key(s) "{self.primary_key}"')
 
         if not self.connected:
             raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
@@ -356,8 +362,12 @@ class PostGresTable(DatabaseTable):
     def __contains__(self, key: Any) -> bool:
         if isinstance(key, Generator):
             key = tuple(key)
+        elif isinstance(key, dict):
+            if not all(field in key for field in self.primary_key):
+                raise KeyError(f'does not contain "{self.primary_key}"')
+            key = tuple(key[field] for field in self.primary_key)
         elif not isinstance(key, Sequence) or isinstance(key, str):
-            key = [key]
+            key = tuple([key])
 
         if not self.connected:
             raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
@@ -412,9 +422,9 @@ def database_table_has_record(cursor: psycopg2._psycopg.cursor, table: str, reco
     values = []
     for key in primary_key:
         value = record[key]
-        if type(value) is date:
+        if isinstance(value, date):
             value = f'{value:%Y%m%d}'
-        elif type(value) is datetime:
+        elif isinstance(value, datetime):
             value = f'{value:%Y%m%d %H%M%S}'
         values.append(value)
     values = tuple(values)

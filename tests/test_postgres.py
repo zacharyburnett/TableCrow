@@ -86,7 +86,8 @@ class TestPostGresTable(unittest.TestCase):
             'primary_key_field': int,
             'field_1'          : datetime,
             'field_2'          : float,
-            'field_3'          : str
+            'field_3'          : str,
+            'field_4'          : [],
         }
 
         with self.connection:
@@ -174,6 +175,49 @@ class TestPostGresTable(unittest.TestCase):
                 for field, value in record.items():
                     self.assertEqual(record[field], value)
 
+    def test_list_type(self):
+        table_name = 'test_list_type'
+
+        fields = {
+            'primary_key_field': int,
+            'field_1'          : [str],
+            'field_2'          : tuple([str])
+        }
+
+        records = [
+            {'primary_key_field': 1, 'field_1': ['test 1', 'test 2']},
+            {'primary_key_field': 2, 'field_1': ['test 3', 'test 1']},
+            {'primary_key_field': 3, 'field_2': ['test 1', 'test 2']},
+        ]
+
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                if database_has_table(cursor, table_name):
+                    cursor.execute(f'DROP TABLE {table_name};')
+
+        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
+                password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
+                ssh_password=self.ssh_password)
+
+        table.insert(records)
+
+        test_records = table.records
+
+        test_record_query_1 = table.records_where('\'test 1\' = ANY(field_1)')
+        test_record_query_2 = table.records_where({'field_1': 'test 1'})
+
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                cursor.execute(f'DROP TABLE {table_name};')
+
+        records[0]['field_2'] = None
+        records[1]['field_2'] = None
+        records[2]['field_1'] = None
+
+        self.assertEqual(records, test_records)
+        self.assertEqual(records[:2], test_record_query_1)
+        self.assertEqual(records[:2], test_record_query_2)
+
     def test_records_where(self):
         table_name = 'test_records_where'
 
@@ -206,10 +250,17 @@ class TestPostGresTable(unittest.TestCase):
         test_record_query_3 = table.records_where({'primary_key_field': range(3)})
         test_record_query_4 = table.records_where({'field_2': 'test%'})
         test_record_query_5 = table.records_where('field_1 = \'2020-01-02\'')
-        test_record_query_6 = table.records_where({'field_2': None})
+        test_record_query_6 = table.records_where(['field_1 = \'2020-01-02\'', 'field_2 IN (\'test 1\', \'test 2\')'])
+        test_record_query_7 = table.records_where({'field_2': None})
 
         with self.assertRaises(KeyError):
             table.records_where('nonexistent_field = 4')
+
+        with self.assertRaises(SyntaxError):
+            table.records_where('bad_ syn = tax')
+
+        with self.assertRaises(NotImplementedError):
+            table.records_where(1)
 
         with self.connection:
             with self.connection.cursor() as cursor:
@@ -220,7 +271,8 @@ class TestPostGresTable(unittest.TestCase):
         self.assertEqual(records[:2], test_record_query_3)
         self.assertEqual(records[:3], test_record_query_4)
         self.assertEqual([records[1]], test_record_query_5)
-        self.assertEqual([records[3]], test_record_query_6)
+        self.assertEqual([records[1]], test_record_query_6)
+        self.assertEqual([records[3]], test_record_query_7)
 
     def test_field_reorder(self):
         table_name = 'test_field_reorder'
@@ -306,6 +358,16 @@ class TestPostGresTable(unittest.TestCase):
         test_records_before_addition = table.records
         table[extra_record['primary_key_field']] = extra_record
         test_records_after_addition = table.records
+
+        self.assertTrue(records[0] in table)
+        self.assertTrue(records[0]['primary_key_field'] in table)
+        self.assertTrue((records[0][field] for field in ['primary_key_field']) in table)
+
+        with self.assertRaises(KeyError):
+            key_without_primary_key = {field: records[0][field] for field in records[0] if field not in ['primary_key_field']}
+            key_without_primary_key in table
+
+        table.insert(records[0])
 
         with self.connection:
             with self.connection.cursor() as cursor:
