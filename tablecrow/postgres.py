@@ -2,11 +2,11 @@ from datetime import date, datetime
 from functools import partial
 from logging import Logger
 import re
-from typing import Any, Generator, Sequence, Union
+from typing import Any, Sequence, Union
 
 import psycopg2
 from pyproj import CRS
-from shapely.geometry.base import BaseGeometry, GEOMETRY_TYPES
+from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry, GEOMETRY_TYPES
 from sshtunnel import SSHTunnelForwarder
 
 from .table import DatabaseTable, parse_record_values, random_open_tcp_port, split_URL_port
@@ -34,9 +34,9 @@ class PostGresTable(DatabaseTable):
         **{geometry_type: 'GEOMETRY' for geometry_type in GEOMETRY_TYPES}
     }
 
-    def __init__(self, hostname: str, database: str, table: str, fields: {str: type}, primary_key: str = None, crs: CRS = None,
+    def __init__(self, hostname: str, database: str, name: str, fields: {str: type}, primary_key: str = None, crs: CRS = None,
                  username: str = None, password: str = None, users: [str] = None, logger: Logger = None, **kwargs):
-        super().__init__(hostname, database, table, fields, primary_key, username, password, users, logger)
+        super().__init__(hostname, database, name, fields, primary_key, username, password, users, logger)
         self.crs = crs if crs is not None else DEFAULT_CRS
 
         connector = partial(psycopg2.connect, database=self.database, user=self.username, password=self.password)
@@ -68,18 +68,18 @@ class PostGresTable(DatabaseTable):
             self.connection = connector(host=self.hostname, port=self.port)
 
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
+            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
 
         with self.connection:
             with self.connection.cursor() as cursor:
-                if database_has_table(cursor, self.table):
-                    if database_table_is_inherited(cursor, self.table):
-                        raise RuntimeError(f'inheritance of table "{self.database}/{self.table}" '
+                if database_has_table(cursor, self.name):
+                    if database_table_is_inherited(cursor, self.name):
+                        raise RuntimeError(f'inheritance of table "{self.database}/{self.name}" '
                                            f'will cause unexpected behaviour; aborting')
 
                     remote_fields = self.remote_fields
                     if list(remote_fields) != list(self.fields):
-                        self.logger.warning(f'schema of existing table "{self.database}/{self.table}" '
+                        self.logger.warning(f'schema of existing table "{self.database}/{self.name}" '
                                             f'differs from given fields')
 
                         remote_fields_not_in_local_table = {field: value for field, value in remote_fields.items() if
@@ -110,35 +110,35 @@ class PostGresTable(DatabaseTable):
                                                 f'to remote table: {list(local_fields_not_in_remote_table)}')
 
                         if list(remote_fields) != list(self.fields):
-                            self.logger.warning(f'altering schema of "{self.database}/{self.table}"')
+                            self.logger.warning(f'altering schema of "{self.database}/{self.name}"')
                             self.logger.debug(self.remote_fields)
                             self.logger.debug(self.fields)
 
-                            copy_table_name = f'old_{self.table}'
+                            copy_table_name = f'old_{self.name}'
 
                             if database_has_table(cursor, copy_table_name):
                                 cursor.execute(f'DROP TABLE {copy_table_name};')
 
-                            cursor.execute(f'ALTER TABLE {self.table} RENAME TO {copy_table_name};')
+                            cursor.execute(f'ALTER TABLE {self.name} RENAME TO {copy_table_name};')
 
-                            cursor.execute(f'CREATE TABLE {self.table} ({self.schema});')
+                            cursor.execute(f'CREATE TABLE {self.name} ({self.schema});')
                             for user in self.users:
-                                cursor.execute(f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.table} TO {user};')
+                                cursor.execute(f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};')
 
                             cursor.execute('SELECT column_name FROM information_schema.columns WHERE table_name=%s;',
                                     [copy_table_name])
                             copy_table_fields = [record[0] for record in cursor.fetchall()]
 
-                            cursor.execute(f'INSERT INTO {self.table} ({", ".join(copy_table_fields)}) '
+                            cursor.execute(f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) '
                                            f'SELECT * FROM {copy_table_name};')
 
                             cursor.execute(f'DROP TABLE {copy_table_name};')
                 else:
-                    self.logger.debug(f'creating remote table "{self.database}/{self.table}"')
-                    cursor.execute(f'CREATE TABLE {self.table} ({self.schema});')
+                    self.logger.debug(f'creating remote table "{self.database}/{self.name}"')
+                    cursor.execute(f'CREATE TABLE {self.name} ({self.schema});')
 
                     for user in self.users:
-                        cursor.execute(f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.table} TO {user};')
+                        cursor.execute(f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};')
 
     @property
     def schema(self) -> str:
@@ -163,14 +163,12 @@ class PostGresTable(DatabaseTable):
     @property
     def remote_fields(self) -> {str: type}:
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
+            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
 
         with self.connection:
             with self.connection.cursor() as cursor:
-                if database_has_table(cursor, self.table):
-                    cursor.execute(f'SELECT column_name, udt_name FROM information_schema.columns WHERE table_name=%s;',
-                            [self.table])
-                    fields = {field[0]: field[1] for field in cursor.fetchall()}
+                if database_has_table(cursor, self.name):
+                    fields = database_table_fields(cursor, self.name)
 
                     for field, field_type in fields.items():
                         dimensions = field_type.count('_')
@@ -217,14 +215,15 @@ class PostGresTable(DatabaseTable):
             raise NotImplementedError(f'unsupported query type "{type(where)}"')
 
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
+            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
 
         if where is None or len(where) == 0:
             with self.connection:
                 with self.connection.cursor() as cursor:
-                    cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.table}')
+                    cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.name}')
                     matching_records = cursor.fetchall()
         else:
+            fields = None
             where_values = []
             if isinstance(where, str):
                 where_clause = where
@@ -233,7 +232,20 @@ class PostGresTable(DatabaseTable):
                 for field, value in where.items():
                     field_type = self.fields[field]
                     if isinstance(field_type, list):
-                        statement = f'%s = ANY({field})'
+                        if not isinstance(value, Sequence) or isinstance(value, str):
+                            statement = f'%s = ANY({field})'
+                        else:
+                            if fields is None:
+                                with self.connection:
+                                    with self.connection.cursor() as cursor:
+                                        fields = database_table_fields(cursor)
+                            field_type = fields[field]
+                            dimensions = field_type.count('_')
+                            field_type = field_type.strip('_')
+                            statement = f'{field} = %s::{field_type}{"[]" * dimensions}'
+                    elif isinstance(value, BaseGeometry) or isinstance(value, BaseMultipartGeometry):
+                        where_clause.append(f'{field} = ST_GeomFromWKB(%s::geometry, %s)')
+                        where_values.extend([value.wkb, self.crs.to_epsg()])
                     elif value is None:
                         statement = f'{field} IS %s'
                     elif isinstance(value, Sequence) and not isinstance(value, str):
@@ -242,6 +254,10 @@ class PostGresTable(DatabaseTable):
                     elif isinstance(value, str) and '%' in value:
                         statement = f'{field} ILIKE %s'
                     else:
+                        if isinstance(value, date):
+                            value = f'{value:%Y%m%d}'
+                        elif isinstance(value, datetime):
+                            value = f'{value:%Y%m%d %H%M%S}'
                         statement = f'{field} = %s'
                     where_values.append(value)
                     where_clause.append(statement)
@@ -255,7 +271,7 @@ class PostGresTable(DatabaseTable):
             try:
                 with self.connection:
                     with self.connection.cursor() as cursor:
-                        cursor.execute(f'SELECT * FROM {self.table} WHERE {where_clause}', where_values)
+                        cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause}', where_values)
                         matching_records = cursor.fetchall()
             except psycopg2.errors.UndefinedColumn as error:
                 raise KeyError(error)
@@ -281,7 +297,7 @@ class PostGresTable(DatabaseTable):
             raise KeyError(f'one or more records does not contain primary key(s) "{self.primary_key}"')
 
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
+            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
 
         with self.connection:
             with self.connection.cursor() as cursor:
@@ -304,27 +320,27 @@ class PostGresTable(DatabaseTable):
                     columns = [field for field in local_fields_in_record if field not in geometry_fields]
                     values = [record[field] for field in local_fields_in_record if field not in geometry_fields]
 
-                    if database_table_has_record(cursor, self.table, record, self.primary_key):
+                    if primary_key_value in self:
                         record_without_primary_key = {column: value for column, value in zip(columns, values)
                                                       if column not in self.primary_key}
                         if len(record_without_primary_key) > 0:
                             if len(record_without_primary_key) > 1:
-                                cursor.execute(f'UPDATE {self.table} SET ({", ".join(record_without_primary_key.keys())}) = %s'
+                                cursor.execute(f'UPDATE {self.name} SET ({", ".join(record_without_primary_key.keys())}) = %s'
                                                f' WHERE {primary_key_string} = %s;',
                                         [tuple(record_without_primary_key.values()), primary_key_value])
                             else:
-                                cursor.execute(f'UPDATE {self.table} SET {tuple(record_without_primary_key.keys())[0]} = %s'
+                                cursor.execute(f'UPDATE {self.name} SET {tuple(record_without_primary_key.keys())[0]} = %s'
                                                f' WHERE {primary_key_string} = %s;',
                                         [tuple(record_without_primary_key.values())[0], primary_key_value])
                     else:
-                        cursor.execute(f'INSERT INTO {self.table} ({", ".join(columns)}) VALUES %s;',
+                        cursor.execute(f'INSERT INTO {self.name} ({", ".join(columns)}) VALUES %s;',
                                 [tuple(values)])
 
                     if len(geometry_fields) > 0:
                         geometries = {field: record[field] for field in geometry_fields if record[field] is not None}
 
                         for field, geometry in geometries.items():
-                            cursor.execute(f'UPDATE {self.table} SET {field} = ST_GeomFromWKB(%s::geometry, %s) '
+                            cursor.execute(f'UPDATE {self.name} SET {field} = ST_GeomFromWKB(%s::geometry, %s) '
                                            f'WHERE {primary_key_string} = %s;',
                                     [geometry.wkb, self.crs.to_epsg(), primary_key_value])
 
@@ -354,30 +370,13 @@ class PostGresTable(DatabaseTable):
 
         with self.connection:
             with self.connection.cursor() as cursor:
-                cursor.execute(f'SELECT * FROM {self.table} WHERE {where_clause}', where_values)
+                cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause}', where_values)
                 records = cursor.fetchall()
 
         return [parse_record_values(dict(zip(self.fields.keys(), record)), self.fields) for record in records]
 
-    def __contains__(self, key: Any) -> bool:
-        if isinstance(key, Generator):
-            key = tuple(key)
-        elif isinstance(key, dict):
-            if not all(field in key for field in self.primary_key):
-                raise KeyError(f'does not contain "{self.primary_key}"')
-            key = tuple(key[field] for field in self.primary_key)
-        elif not isinstance(key, Sequence) or isinstance(key, str):
-            key = tuple([key])
-
-        if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
-
-        with self.connection:
-            with self.connection.cursor() as cursor:
-                return database_table_has_record(cursor, self.table, dict(zip(self.primary_key, key)), self.primary_key)
-
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.table)}, ' \
+        return f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.name)}, ' \
                f'{repr(self.fields)}, {repr(self.primary_key)}, {repr(self.crs.to_epsg())}, ' \
                f'{repr(self.username)}, {repr(re.sub(".", "*", self.password))}, {repr(self.users)})'
 
@@ -392,44 +391,6 @@ def database_has_table(cursor: psycopg2._psycopg.cursor, table: str) -> bool:
     """
 
     cursor.execute(f'SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name=%s);', [table.lower()])
-    return cursor.fetchone()[0]
-
-
-def database_table_has_record(cursor: psycopg2._psycopg.cursor, table: str, record: {str: Any},
-                              primary_key: str = None) -> bool:
-    """
-    Whether the given record exists within the given table.
-
-    :param cursor: psycopg2 cursor
-    :param table: name of table
-    :param record: dictionary record
-    :param primary_key: name of primary key
-    :return: whether record exists in table
-    """
-
-    if primary_key is None:
-        # cursor.execute(f'SELECT 1 FROM information_schema.table_constraints WHERE table_name=\'{table}\' AND
-        # constraint_type= \'PRIMARY KEY\';')
-        # primary_key_index = cursor.fetchone()[0] - 1
-        #
-        # cursor.execute(f'SELECT * FROM information_schema.columns WHERE table_name=\'{table}\';')
-        # primary_key = cursor.fetchall()[primary_key_index]
-        primary_key = list(record)[0]
-
-    if not isinstance(primary_key, Sequence) or isinstance(primary_key, str):
-        primary_key = [primary_key]
-
-    values = []
-    for key in primary_key:
-        value = record[key]
-        if isinstance(value, date):
-            value = f'{value:%Y%m%d}'
-        elif isinstance(value, datetime):
-            value = f'{value:%Y%m%d %H%M%S}'
-        values.append(value)
-    values = tuple(values)
-
-    cursor.execute(f'SELECT EXISTS(SELECT 1 FROM {table} WHERE ({", ".join(primary_key)}) = %s);', [values])
     return cursor.fetchone()[0]
 
 
@@ -457,18 +418,3 @@ def database_table_fields(cursor: psycopg2._psycopg.cursor, table: str) -> {str:
 
     cursor.execute(f'SELECT column_name, udt_name FROM information_schema.columns WHERE table_name=%s;', [table])
     return {record[0]: record[1] for record in cursor.fetchall()}
-
-
-def postgis_geometry(geometry: BaseGeometry, epsg: int = None) -> str:
-    """
-    Convert Shapely geometry to a PostGIS geometry string.
-
-    :param geometry: Shapely geometry
-    :param epsg: EPSG code of CRS
-    :return: PostGIS input string
-    """
-
-    if epsg is None:
-        epsg = 4326
-
-    return f'ST_SetSRID(\'{geometry.wkb_hex}\'::geometry, {epsg})'
