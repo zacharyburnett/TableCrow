@@ -5,7 +5,7 @@ import logging
 from logging import Logger
 import re
 import socket
-from typing import Any, Sequence, Tuple, Union
+from typing import Any, Generator, Sequence, Tuple, Union
 
 from shapely import wkb, wkt
 from shapely.errors import WKBReadingError, WKTReadingError
@@ -17,7 +17,7 @@ class DatabaseTable(ABC):
     DEFAULT_PORT = NotImplementedError
     FIELD_TYPES: {str: str} = NotImplementedError
 
-    def __init__(self, hostname: str, database: str, table: str, fields: {str: type},
+    def __init__(self, hostname: str, database: str, name: str, fields: {str: type},
                  primary_key: Union[str, Tuple[str]] = None, username: str = None, password: str = None, users: [str] = None,
                  logger: Logger = None):
         """
@@ -25,7 +25,7 @@ class DatabaseTable(ABC):
 
         :param hostname: URL of database server as `hostname:port`
         :param database: name of database in server
-        :param table: name of table in database
+        :param name: name of table in database
         :param fields: dictionary of fields
         :param primary_key: name of primary key field(s)
         :param username: username to connect ot database
@@ -53,7 +53,7 @@ class DatabaseTable(ABC):
         self.__port = port
 
         self.__database = database
-        self.__table = table
+        self.__name = name
 
         self.__fields = fields
         self.__primary_key = primary_key
@@ -78,8 +78,8 @@ class DatabaseTable(ABC):
         return self.__database
 
     @property
-    def table(self) -> str:
-        return self.__table
+    def name(self) -> str:
+        return self.__name
 
     @property
     def fields(self) -> {str: type}:
@@ -166,21 +166,34 @@ class DatabaseTable(ABC):
         :return: dictionary record
         """
 
-        if not isinstance(key, Sequence) or isinstance(key, str):
-            key = [key]
-
-        where = dict(zip(self.primary_key, key))
+        if isinstance(key, dict):
+            if not all(field in key for field in self.primary_key):
+                raise ValueError(f'does not contain "{self.primary_key}"')
+            where = key
+        else:
+            if isinstance(key, Generator):
+                key = list(key)
+            elif not isinstance(key, Sequence) or isinstance(key, str):
+                key = [key]
+            if len(key) != len(self.primary_key):
+                raise ValueError(f'ambiguous value for primary key "{self.primary_key}"')
+            where = {field: key[index] for index, field in enumerate(self.primary_key)}
 
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
+            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
 
-        records = self.records_where(where)
+        try:
+            records = self.records_where(where)
 
-        if len(records) > 1:
-            where_string = ' AND '.join(f'{key} = {value}' for key, value in where.items())
-            self.logger.warning(f'found more than one record with primary key "{where_string}": {records}')
+            if len(records) > 1:
+                self.logger.warning(f'found more than one record matching query {where}: {records}')
 
-        return records[0]
+            if len(records) > 0:
+                return records[0]
+            else:
+                raise KeyError(f'"{key}" not in table')
+        except:
+            raise KeyError(f'"{key}" not in table')
 
     def __setitem__(self, key: Any, record: {str: Any}):
         """
@@ -190,14 +203,20 @@ class DatabaseTable(ABC):
         :param record: dictionary record
         """
 
-        if not isinstance(key, Sequence) or isinstance(key, str):
+        if isinstance(key, Generator):
+            key = list(key)
+        elif isinstance(key, dict):
+            if not all(field in key for field in self.primary_key):
+                raise KeyError(f'does not contain "{self.primary_key}"')
+            key = [key[field] for field in self.primary_key]
+        elif not isinstance(key, Sequence) or isinstance(key, str):
             key = [key]
 
         for key_index, primary_key in enumerate(self.primary_key):
             record[primary_key] = key[key_index]
 
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
+            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
 
         self.insert([record])
 
@@ -211,19 +230,17 @@ class DatabaseTable(ABC):
         raise NotImplementedError
 
     def __contains__(self, key: Any) -> bool:
-        if not isinstance(key, Sequence) or isinstance(key, str):
-            key = [key]
-
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.table}')
+            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
 
         try:
             self[key]
-        except:
-            raise KeyError
+            return True
+        except KeyError:
+            return False
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.table)}, ' \
+        return f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.name)}, ' \
                f'{repr(self.fields)}, {repr(self.primary_key)}, ' \
                f'{repr(self.username)}, {repr(re.sub(".", "*", self.password))}, {repr(self.users)})'
 

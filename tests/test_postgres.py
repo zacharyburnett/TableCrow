@@ -359,11 +359,15 @@ class TestPostGresTable(unittest.TestCase):
         table[extra_record['primary_key_field']] = extra_record
         test_records_after_addition = table.records
 
+        records[0]['field_2'] = None
+        records[1]['field_3'] = None
+
         self.assertTrue(records[0] in table)
         self.assertTrue(records[0]['primary_key_field'] in table)
         self.assertTrue((records[0][field] for field in ['primary_key_field']) in table)
+        self.assertTrue('nonexistant' not in table)
 
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ValueError):
             key_without_primary_key = {field: records[0][field] for field in records[0] if field not in ['primary_key_field']}
             key_without_primary_key in table
 
@@ -372,9 +376,6 @@ class TestPostGresTable(unittest.TestCase):
         with self.connection:
             with self.connection.cursor() as cursor:
                 cursor.execute(f'DROP TABLE {table_name};')
-
-        records[0]['field_2'] = None
-        records[1]['field_3'] = None
 
         self.assertEqual(records, test_records_before_addition)
         self.assertEqual(records + [extra_record], test_records_after_addition)
