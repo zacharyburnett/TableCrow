@@ -229,6 +229,9 @@ class DatabaseTable(ABC):
 
         raise NotImplementedError
 
+    def __len__(self) -> int:
+        return len(self.records)
+
     def __contains__(self, key: Any) -> bool:
         if not self.connected:
             raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')

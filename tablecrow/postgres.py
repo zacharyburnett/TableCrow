@@ -350,6 +350,12 @@ class PostGresTable(DatabaseTable):
             with self.connection.cursor() as cursor:
                 cursor.execute(sql)
 
+    def __len__(self) -> int:
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                cursor.execute(f'SELECT COUNT(*) AS exact_count FROM {self.name};')
+                return cursor.fetchone()[0]
+
     def records_intersecting(self, geometry: BaseGeometry, crs: CRS, geometry_fields: [str] = None) -> [{str: Any}]:
         """
         records in the table that intersect the given geometry

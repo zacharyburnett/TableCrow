@@ -53,8 +53,8 @@ jobs:
         uses: mtkennerly/dunamai-action@v1
         with:
           env-var: VERSION
-      - name: Wait 5 seconds
-        run: sleep 5
+      - name: Wait 10 seconds
+        run: sleep 10
         shell: bash
       - name: Install wheel
         run: pip install tablecrow==$VERSION
