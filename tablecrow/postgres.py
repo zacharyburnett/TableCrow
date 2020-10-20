@@ -255,10 +255,10 @@ class PostGresTable(DatabaseTable):
                     elif isinstance(value, str) and '%' in value:
                         statement = f'{field} ILIKE %s'
                     else:
-                        if isinstance(value, date):
-                            value = f'{value:%Y%m%d}'
-                        elif isinstance(value, datetime):
+                        if isinstance(value, datetime):
                             value = f'{value:%Y%m%d %H%M%S}'
+                        elif isinstance(value, date):
+                            value = f'{value:%Y%m%d}'
                         statement = f'{field} = %s'
                     where_values.append(value)
                     where_clause.append(statement)
