@@ -48,7 +48,7 @@ table = PostGresTable(
 table.insert([
     {'id': 1, 'time': datetime(2020, 1, 1), 'length': 4.4, 'name': 'long boi'},
     {'id': 3, 'time': datetime(2020, 1, 3), 'length': 2, 'name': 'short boi'},
-    {'id': 2}
+    {'id': 2},
 ])
 
 # or alternatively set or access a primary key value with square bracket indexing
@@ -83,7 +83,7 @@ table.insert([
     {'id': 1, 'time': datetime(2020, 1, 1), 'length': 3, 'name': 'short boi'},
     {'id': 3, 'time': datetime(2020, 1, 3), 'length': 2, 'name': 'short boi'},
     {'id': 3, 'time': datetime(2020, 1, 3), 'length': 6, 'name': 'long boi'},
-    {'id': 2, 'name':'short boi'}
+    {'id': 2, 'name':'short boi'},
 ])
 
 # key accessors must include entire primary key
