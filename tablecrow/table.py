@@ -27,7 +27,7 @@ class DatabaseTable(ABC):
         :param database: name of database in server
         :param name: name of table in database
         :param fields: dictionary of fields
-        :param primary_key: name of primary key field(s)
+        :param primary_key: primary key field(s)
         :param username: username to connect ot database
         :param password: password to connect to database
         :param users: list of database users / roles
@@ -191,9 +191,9 @@ class DatabaseTable(ABC):
             if len(records) > 0:
                 return records[0]
             else:
-                raise KeyError(f'"{key}" not in table')
+                raise KeyError(f'no record with primary key "{key}"')
         except:
-            raise KeyError(f'"{key}" not in table')
+            raise KeyError(f'no record with primary key "{key}"')
 
     def __setitem__(self, key: Any, record: {str: Any}):
         """
@@ -241,6 +241,10 @@ class DatabaseTable(ABC):
             return True
         except KeyError:
             return False
+
+    @abstractmethod
+    def delete_remote_table(self):
+        raise NotImplementedError
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.name)}, ' \
