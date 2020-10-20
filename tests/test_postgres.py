@@ -5,9 +5,7 @@ import unittest
 
 import psycopg2
 from pyproj import CRS
-from shapely import wkt
 from shapely.geometry import MultiPolygon, Point, box
-from shapely.ops import unary_union
 from sshtunnel import SSHTunnelForwarder
 
 from tablecrow.postgres import PostGresTable, SSH_DEFAULT_PORT, database_has_table, database_table_fields
@@ -67,9 +65,9 @@ class TestPostGresTable(unittest.TestCase):
             ssh_password = self.ssh_password
 
             self.tunnel = SSHTunnelForwarder((ssh_hostname, ssh_port),
-                    ssh_username=ssh_username, ssh_password=ssh_password,
-                    remote_bind_address=('localhost', port),
-                    local_bind_address=('localhost', random_open_tcp_port()))
+                                             ssh_username=ssh_username, ssh_password=ssh_password,
+                                             remote_bind_address=('localhost', port),
+                                             local_bind_address=('localhost', random_open_tcp_port()))
             try:
                 self.tunnel.start()
             except Exception as error:
@@ -84,12 +82,12 @@ class TestPostGresTable(unittest.TestCase):
 
         fields = {
             'primary_key_field': int,
-            'field_1'          : datetime,
-            'field_2'          : float,
-            'field_3'          : str,
-            'field_4'          : [str],
-            'field_5'          : Point,
-            'field_6'          : MultiPolygon,
+            'field_1': datetime,
+            'field_2': float,
+            'field_3': str,
+            'field_4': [str],
+            'field_5': Point,
+            'field_6': MultiPolygon,
         }
 
         with self.connection:
@@ -98,8 +96,8 @@ class TestPostGresTable(unittest.TestCase):
                     cursor.execute(f'DROP TABLE {table_name};')
 
         table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                ssh_password=self.ssh_password)
+                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
+                              ssh_password=self.ssh_password)
 
         test_remote_fields = table.remote_fields
 
@@ -119,9 +117,9 @@ class TestPostGresTable(unittest.TestCase):
 
         fields = {
             'primary_key_field': int,
-            'field_1'          : datetime,
-            'field_2'          : float,
-            'field_3'          : str
+            'field_1': datetime,
+            'field_2': float,
+            'field_3': str
         }
 
         records = [
@@ -137,8 +135,8 @@ class TestPostGresTable(unittest.TestCase):
                     cursor.execute(f'DROP TABLE {table_name};')
 
         table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                ssh_password=self.ssh_password)
+                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
+                              ssh_password=self.ssh_password)
         table.insert(records)
         test_records_before_addition = table.records
         table[extra_record['primary_key_field']] = extra_record
@@ -171,14 +169,14 @@ class TestPostGresTable(unittest.TestCase):
 
         fields = {
             'primary_key_field': int,
-            'field_1'          : datetime,
-            'field_2'          : float,
-            'field_3'          : str
+            'field_1': datetime,
+            'field_2': float,
+            'field_3': str
         }
 
         incomplete_fields = {
             'primary_key_field': int,
-            'field_3'          : str
+            'field_3': str
         }
 
         records = [
@@ -192,8 +190,9 @@ class TestPostGresTable(unittest.TestCase):
 
         # create table with incomplete fields
         incomplete_table = PostGresTable(self.hostname, self.database, table_name, incomplete_fields, 'primary_key_field',
-                username=self.username, password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                ssh_password=self.ssh_password)
+                                         username=self.username, password=self.password, ssh_hostname=self.ssh_hostname,
+                                         ssh_username=self.ssh_username,
+                                         ssh_password=self.ssh_password)
         incomplete_table.insert(records)
         incomplete_records = incomplete_table.records
 
@@ -203,8 +202,9 @@ class TestPostGresTable(unittest.TestCase):
 
         # create table with complete fields, pointing to existing remote table with incomplete fields
         complete_table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field',
-                username=self.username, password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                ssh_password=self.ssh_password)
+                                       username=self.username, password=self.password, ssh_hostname=self.ssh_hostname,
+                                       ssh_username=self.ssh_username,
+                                       ssh_password=self.ssh_password)
         complete_records = complete_table.records
 
         with self.connection:
@@ -213,8 +213,9 @@ class TestPostGresTable(unittest.TestCase):
 
         # create table with incomplete fields, pointing to existing remote table with complete fields
         completed_table = PostGresTable(self.hostname, self.database, table_name, incomplete_fields, 'primary_key_field',
-                username=self.username, password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                ssh_password=self.ssh_password)
+                                        username=self.username, password=self.password, ssh_hostname=self.ssh_hostname,
+                                        ssh_username=self.ssh_username,
+                                        ssh_password=self.ssh_password)
         completed_records = completed_table.records
 
         with self.connection:
@@ -236,8 +237,8 @@ class TestPostGresTable(unittest.TestCase):
 
         fields = {
             'primary_key_field': int,
-            'field_1'          : [str],
-            'field_2'          : tuple([str])
+            'field_1': [str],
+            'field_2': tuple([str])
         }
 
         records = [
@@ -252,8 +253,8 @@ class TestPostGresTable(unittest.TestCase):
                     cursor.execute(f'DROP TABLE {table_name};')
 
         table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                ssh_password=self.ssh_password)
+                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
+                              ssh_password=self.ssh_password)
 
         table.insert(records)
 
@@ -279,8 +280,8 @@ class TestPostGresTable(unittest.TestCase):
 
         fields = {
             'primary_key_field': int,
-            'field_1'          : datetime,
-            'field_2'          : str
+            'field_1': datetime,
+            'field_2': str
         }
 
         records = [
@@ -296,8 +297,8 @@ class TestPostGresTable(unittest.TestCase):
                     cursor.execute(f'DROP TABLE {table_name};')
 
         table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                ssh_password=self.ssh_password)
+                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
+                              ssh_password=self.ssh_password)
 
         table.insert(records)
 
@@ -335,16 +336,16 @@ class TestPostGresTable(unittest.TestCase):
 
         fields = {
             'primary_key_field': int,
-            'field_1'          : datetime,
-            'field_2'          : float,
-            'field_3'          : str
+            'field_1': datetime,
+            'field_2': float,
+            'field_3': str
         }
 
         reordered_fields = {
-            'field_2'          : float,
+            'field_2': float,
             'primary_key_field': int,
-            'field_1'          : datetime,
-            'field_3'          : str
+            'field_1': datetime,
+            'field_3': str
         }
 
         records = [
@@ -357,8 +358,8 @@ class TestPostGresTable(unittest.TestCase):
                     cursor.execute(f'DROP TABLE {table_name};')
 
         table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                ssh_password=self.ssh_password)
+                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
+                              ssh_password=self.ssh_password)
         table.insert(records)
         test_records = table.records
 
@@ -367,8 +368,9 @@ class TestPostGresTable(unittest.TestCase):
                 test_fields = database_table_fields(cursor, table_name)
 
         reordered_table = PostGresTable(self.hostname, self.database, table_name, reordered_fields, 'primary_key_field',
-                username=self.username, password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                ssh_password=self.ssh_password)
+                                        username=self.username, password=self.password, ssh_hostname=self.ssh_hostname,
+                                        ssh_username=self.ssh_username,
+                                        ssh_password=self.ssh_password)
         test_reordered_records = reordered_table.records
 
         with self.connection:
@@ -390,9 +392,9 @@ class TestPostGresTable(unittest.TestCase):
 
         fields = {
             'primary_key_field': int,
-            'field_1'          : datetime,
-            'field_2'          : float,
-            'field_3'          : str
+            'field_1': datetime,
+            'field_2': float,
+            'field_3': str
         }
 
         record_with_extra_field = {'primary_key_field': 2, 'field_1': datetime(2020, 1, 2), 'nonexistent_field': 'test'}
@@ -403,8 +405,8 @@ class TestPostGresTable(unittest.TestCase):
                     cursor.execute(f'DROP TABLE {table_name};')
 
         table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                ssh_password=self.ssh_password)
+                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
+                              ssh_password=self.ssh_password)
         table[record_with_extra_field['primary_key_field']] = record_with_extra_field
         test_records = table.records
 
@@ -423,38 +425,38 @@ class TestPostGresTable(unittest.TestCase):
 
         fields = {
             'primary_key_field': int,
-            'field_1'          : str,
-            'field_2'          : MultiPolygon,
-            'field_3'          : MultiPolygon
+            'field_1': str,
+            'field_2': MultiPolygon,
+            'field_3': MultiPolygon
         }
 
         crs = CRS.from_epsg(4326)
 
-        inside_polygon_1 = wkt.loads('POLYGON ((-164.7 67.725, -164.7 67.8, -164.4 67.8, -164.4 67.725, -164.7 67.725))')
-        inside_polygon_2 = wkt.loads('POLYGON ((-164.4 67.65, -164.4 67.725, -164.1 67.725, -164.1 67.65, -164.4 67.65))')
-        touching_polygon = wkt.loads('POLYGON ((-164.1 67.575, -164.1 67.65, -163.8 67.65, -163.8 67.575, -164.1 67.575))')
-        outside_polygon = wkt.loads('POLYGON ((-164.7 67.425, -164.7 67.5, -164.4 67.5, -164.4 67.425, -164.7 67.425))')
-        containing_polygon = box(*unary_union([inside_polygon_1, inside_polygon_2]).bounds)
-        multipolygon = MultiPolygon([inside_polygon_1, touching_polygon])
+        inside_polygon = box(-77.7, 39.725, -77.4, 39.8)
+        touching_polygon = box(-77.1, 39.575, -76.8, 39.65)
+        outside_polygon = box(-77.7, 39.425, -77.4, 39.5)
+        containing_polygon = box(-77.7, 39.65, -77.1, 39.8)
+        projected_containing_polygon = box(268397.8, 4392279.8, 320292.0, 4407509.6)
+        multipolygon = MultiPolygon([inside_polygon, touching_polygon])
 
         records = [
             {
                 'primary_key_field': 1,
-                'field_1'          : 'inside box',
-                'field_2'          : MultiPolygon([inside_polygon_1]),
-                'field_3'          : None
+                'field_1': 'inside box',
+                'field_2': MultiPolygon([inside_polygon]),
+                'field_3': None
             },
             {
                 'primary_key_field': 2,
-                'field_1'          : 'containing box',
-                'field_2'          : MultiPolygon([containing_polygon]),
-                'field_3'          : None
+                'field_1': 'containing box',
+                'field_2': MultiPolygon([containing_polygon]),
+                'field_3': None
             },
             {
                 'primary_key_field': 3,
-                'field_1'          : 'outside box with multipolygon',
-                'field_2'          : MultiPolygon([outside_polygon]),
-                'field_3'          : multipolygon
+                'field_1': 'outside box with multipolygon',
+                'field_2': MultiPolygon([outside_polygon]),
+                'field_3': multipolygon
             }
         ]
 
@@ -463,15 +465,16 @@ class TestPostGresTable(unittest.TestCase):
                 if database_has_table(cursor, table_name):
                     cursor.execute(f'DROP TABLE {table_name};')
 
-        metadata_table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field',
-                username=self.username, password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                ssh_password=self.ssh_password)
-        metadata_table.insert(records)
+        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field',
+                              username=self.username, password=self.password, ssh_hostname=self.ssh_hostname,
+                              ssh_username=self.ssh_username, ssh_password=self.ssh_password)
+        table.insert(records)
 
-        test_query_1 = metadata_table.records_intersecting(inside_polygon_1, crs)
-        test_query_2 = metadata_table.records_intersecting(containing_polygon, crs)
-        test_query_3 = metadata_table.records_intersecting(inside_polygon_1, crs, ['field_2'])
-        test_query_4 = metadata_table.records_intersecting(containing_polygon, crs, ['field_2'])
+        test_query_1 = table.records_intersecting(inside_polygon)
+        test_query_2 = table.records_intersecting(containing_polygon)
+        test_query_3 = table.records_intersecting(inside_polygon, geometry_fields=['field_2'])
+        test_query_4 = table.records_intersecting(containing_polygon, geometry_fields=['field_2'])
+        test_query_5 = table.records_intersecting(projected_containing_polygon, crs=CRS.from_epsg(32618), geometry_fields=['field_2'])
 
         with self.connection:
             with self.connection.cursor() as cursor:
@@ -481,6 +484,7 @@ class TestPostGresTable(unittest.TestCase):
         self.assertEqual(records, test_query_2)
         self.assertEqual(records[:2], test_query_3)
         self.assertEqual(records[:2], test_query_4)
+        self.assertEqual(records[:2], test_query_5)
 
 
 if __name__ == '__main__':
