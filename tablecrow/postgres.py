@@ -90,16 +90,9 @@ class PostGresTable(DatabaseTable):
                             self.logger.warning(f'adding {len(remote_fields_not_in_local_table)} fields '
                                                 f'to local table: {list(remote_fields_not_in_local_table)}')
 
-                            for field, field_type in remote_fields_not_in_local_table.items():
-                                previous_field = list(remote_fields)[list(remote_fields).index(field) - 1]
-
-                                local_fields = {}
-                                for local_field, local_value in self.fields.items():
-                                    local_fields[local_field] = local_value
-                                    if local_field == previous_field:
-                                        local_fields[field] = field_type
-
-                                self._DatabaseTable__fields = local_fields
+                            self._DatabaseTable__fields.update(remote_fields_not_in_local_table)
+                            self._DatabaseTable__fields = {field: self._DatabaseTable__fields[field]
+                                                           for field in remote_fields}
 
                         local_fields_not_in_remote_table = {field: value for field, value in self.fields.items()
                                                             if field not in remote_fields}
@@ -175,8 +168,16 @@ class PostGresTable(DatabaseTable):
                         field_type = field_type.strip('_')
 
                         field_type = field_type.lower()
+                        if field_type == 'geometry':
+                            if field in self.fields:
+                                fields[field] = self.fields[field]
+                                continue
+
                         for python_type, postgres_type in self.FIELD_TYPES.items():
                             if postgres_type.lower() == field_type:
+                                if field_type == 'geometry':
+                                    if python_type not in globals():
+                                        exec(f'from shapely.geometry import {python_type}')
                                 field_type = eval(python_type)
                                 break
                         else:
