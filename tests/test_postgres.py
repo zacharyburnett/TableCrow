@@ -6,7 +6,7 @@ import unittest
 import psycopg2
 from pyproj import CRS
 from shapely import wkt
-from shapely.geometry import MultiPolygon, box
+from shapely.geometry import MultiPolygon, Point, box
 from shapely.ops import unary_union
 from sshtunnel import SSHTunnelForwarder
 
@@ -87,7 +87,9 @@ class TestPostGresTable(unittest.TestCase):
             'field_1'          : datetime,
             'field_2'          : float,
             'field_3'          : str,
-            'field_4'          : [],
+            'field_4'          : [str],
+            'field_5'          : Point,
+            'field_6'          : MultiPolygon,
         }
 
         with self.connection:
@@ -95,18 +97,21 @@ class TestPostGresTable(unittest.TestCase):
                 if database_has_table(cursor, table_name):
                     cursor.execute(f'DROP TABLE {table_name};')
 
-        PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
+        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
                 password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
                 ssh_password=self.ssh_password)
 
+        test_remote_fields = table.remote_fields
+
         with self.connection:
             with self.connection.cursor() as cursor:
-                test_remote_fields = database_table_fields(cursor, table_name)
+                test_raw_remote_fields = database_table_fields(cursor, table_name)
                 table_exists = database_has_table(cursor, table_name)
                 if table_exists:
                     cursor.execute(f'DROP TABLE {table_name};')
 
-        self.assertEqual(list(fields), list(test_remote_fields))
+        self.assertEqual(fields, test_remote_fields)
+        self.assertEqual(list(fields), list(test_raw_remote_fields))
         self.assertTrue(table_exists)
 
     def test_table_flexibility(self):
@@ -165,7 +170,6 @@ class TestPostGresTable(unittest.TestCase):
                 test_completed_remote_fields = database_table_fields(cursor, table_name)
                 cursor.execute(f'DROP TABLE {table_name};')
 
-        self.assertEqual(list(incomplete_fields), list(test_incomplete_remote_fields))
         self.assertEqual(list(fields), list(test_complete_remote_fields))
         self.assertEqual(list(fields), list(test_completed_remote_fields))
 
