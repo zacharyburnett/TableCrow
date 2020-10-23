@@ -2,7 +2,6 @@ from datetime import date, datetime
 from functools import partial
 from logging import Logger
 import re
-import typing
 from typing import Any, Collection, Mapping, Sequence, Union
 
 import psycopg2
@@ -134,8 +133,14 @@ class PostGresTable(DatabaseTable):
                         cursor.execute(f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};')
 
     @property
+    def exists(self) -> bool:
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                return database_has_table(cursor, self.name)
+
+    @property
     def schema(self) -> str:
-        """ PostGres schema string of local table, given field names and types """
+        """ PostGreSQL schema string """
 
         schema = []
         for field, field_type in self.fields.items():
@@ -208,81 +213,24 @@ class PostGresTable(DatabaseTable):
             except psycopg2.OperationalError:
                 return False
 
-    def records_where(self, where: {str: Union[Any, list]}) -> [{str: Any}]:
-        """
-        records in the table that match the given key-value pairs
-
-        :param where: dictionary mapping keys to values, with which to match records
-        :return: dictionaries of matching records
-        """
-
-        if where is not None and not isinstance(where, Sequence) and not isinstance(where, dict):
-            raise NotImplementedError(f'unsupported query type "{type(where)}"')
-
+    def records_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]) -> [{str: Any}]:
         if not self.connected:
             raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
 
-        if where is None or len(where) == 0:
-            with self.connection:
-                with self.connection.cursor() as cursor:
+        where_clause, where_values = self.__where_clause(where)
+
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                if where_clause is None:
                     cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.name}')
-                    matching_records = cursor.fetchall()
-        else:
-            fields = None
-            where_values = []
-            if isinstance(where, str):
-                where_clause = where
-            elif isinstance(where, dict):
-                where_clause = []
-                for field, value in where.items():
-                    field_type = self.fields[field]
-                    if isinstance(value, BaseGeometry) or isinstance(value, BaseMultipartGeometry):
-                        where_clause.append(f'{field} = ST_GeomFromText(%s, %s)')
-                        where_values.extend([value.wkt, self.crs.to_epsg()])
-                    else:
-                        if isinstance(field_type, list):
-                            if not isinstance(value, Sequence) or isinstance(value, str):
-                                statement = f'%s = ANY({field})'
-                            else:
-                                if fields is None:
-                                    with self.connection:
-                                        with self.connection.cursor() as cursor:
-                                            fields = database_table_fields(cursor, self.name)
-                                field_type = fields[field]
-                                dimensions = field_type.count('_')
-                                field_type = field_type.strip('_')
-                                statement = f'{field} = %s::{field_type}{"[]" * dimensions}'
-                        elif value is None:
-                            statement = f'{field} IS %s'
-                        elif isinstance(value, Sequence) and not isinstance(value, str):
-                            statement = f'{field} IN %s'
-                            value = tuple(value)
-                        elif isinstance(value, str) and '%' in value:
-                            statement = f'{field} ILIKE %s'
-                        else:
-                            if isinstance(value, datetime):
-                                value = f'{value:%Y%m%d %H%M%S}'
-                            elif isinstance(value, date):
-                                value = f'{value:%Y%m%d}'
-                            statement = f'{field} = %s'
-                        where_values.append(value)
-                        where_clause.append(statement)
-                where_clause = ' AND '.join(where_clause)
-            else:
-                where_clause = ' AND '.join(where)
-
-            if len(where_values) == 0:
-                where_values = None
-
-            try:
-                with self.connection:
-                    with self.connection.cursor() as cursor:
+                else:
+                    try:
                         cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause}', where_values)
-                        matching_records = cursor.fetchall()
-            except psycopg2.errors.UndefinedColumn as error:
-                raise KeyError(error)
-            except psycopg2.errors.SyntaxError as error:
-                raise SyntaxError(f'invalid SQL syntax - {error}')
+                    except psycopg2.errors.UndefinedColumn as error:
+                        raise KeyError(error)
+                    except psycopg2.errors.SyntaxError as error:
+                        raise SyntaxError(f'invalid SQL syntax - {error}')
+                matching_records = cursor.fetchall()
 
         matching_records = [parse_record_values(dict(zip(self.fields.keys(), record)), self.fields)
                             for record in matching_records]
@@ -290,12 +238,6 @@ class PostGresTable(DatabaseTable):
         return matching_records
 
     def insert(self, records: [{str: Any}]):
-        """
-        Insert the list of records into the table.
-
-        :param records: dictionary records
-        """
-
         if isinstance(records, dict):
             records = [records]
 
@@ -350,10 +292,28 @@ class PostGresTable(DatabaseTable):
                                            f'WHERE {primary_key_string} = %s;',
                                            [geometry.wkt, self.crs.to_epsg(), primary_key_value])
 
+    def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
+        if not self.connected:
+            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
+
+        where_clause, where_values = self.__where_clause(where)
+
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                if where_clause is None:
+                    cursor.execute(f'TRUNCATE {self.name};')
+                else:
+                    try:
+                        cursor.execute(f'DELETE FROM {self.name} WHERE {where_clause};', where_values)
+                    except psycopg2.errors.UndefinedColumn as error:
+                        raise KeyError(error)
+                    except psycopg2.errors.SyntaxError as error:
+                        raise SyntaxError(f'invalid SQL syntax - {error}')
+
     def __len__(self) -> int:
         with self.connection:
             with self.connection.cursor() as cursor:
-                cursor.execute(f'SELECT COUNT(*) AS exact_count FROM {self.name};')
+                cursor.execute(f'SELECT COUNT(*) FROM {self.name};')
                 return cursor.fetchone()[0]
 
     def records_intersecting(self, geometry: BaseGeometry, crs: CRS = None, geometry_fields: [str] = None) -> [{str: Any}]:
@@ -393,7 +353,7 @@ class PostGresTable(DatabaseTable):
 
         return [parse_record_values(dict(zip(self.fields.keys(), record)), self.fields) for record in records]
 
-    def delete_remote_table(self):
+    def delete_table(self):
         with self.connection:
             with self.connection.cursor() as cursor:
                 cursor.execute(f'DROP TABLE {self.name};')
@@ -406,6 +366,62 @@ class PostGresTable(DatabaseTable):
     def __del__(self):
         if self.tunnel is not None:
             self.tunnel.stop()
+
+    def __where_clause(self, where: {str: Union[Any, list]}) -> (str, [Any]):
+        if where is not None and not isinstance(where, Sequence) and not isinstance(where, dict):
+            raise NotImplementedError(f'unsupported query type "{type(where)}"')
+
+        if where is None or len(where) == 0:
+            where_clause = None
+            where_values = None
+        else:
+            fields = None
+            where_values = []
+            if isinstance(where, str):
+                where_clause = where
+            elif isinstance(where, dict):
+                where_clause = []
+                for field, value in where.items():
+                    field_type = self.fields[field]
+                    if isinstance(value, BaseGeometry) or isinstance(value, BaseMultipartGeometry):
+                        where_clause.append(f'{field} = ST_GeomFromText(%s, %s)')
+                        where_values.extend([value.wkt, self.crs.to_epsg()])
+                    else:
+                        if isinstance(field_type, list):
+                            if not isinstance(value, Sequence) or isinstance(value, str):
+                                statement = f'%s = ANY({field})'
+                            else:
+                                if fields is None:
+                                    with self.connection:
+                                        with self.connection.cursor() as cursor:
+                                            fields = database_table_fields(cursor, self.name)
+                                field_type = fields[field]
+                                dimensions = field_type.count('_')
+                                field_type = field_type.strip('_')
+                                statement = f'{field} = %s::{field_type}{"[]" * dimensions}'
+                        elif value is None:
+                            statement = f'{field} IS %s'
+                        elif isinstance(value, Sequence) and not isinstance(value, str):
+                            statement = f'{field} IN %s'
+                            value = tuple(value)
+                        elif isinstance(value, str) and '%' in value:
+                            statement = f'{field} ILIKE %s'
+                        else:
+                            if isinstance(value, datetime):
+                                value = f'{value:%Y%m%d %H%M%S}'
+                            elif isinstance(value, date):
+                                value = f'{value:%Y%m%d}'
+                            statement = f'{field} = %s'
+                        where_values.append(value)
+                        where_clause.append(statement)
+                where_clause = ' AND '.join(where_clause)
+            else:
+                where_clause = ' AND '.join(where)
+
+            if len(where_values) == 0:
+                where_values = None
+
+        return where_clause, where_values
 
 
 def database_has_table(cursor: psycopg2._psycopg.cursor, table: str) -> bool:

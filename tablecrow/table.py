@@ -5,7 +5,7 @@ import logging
 from logging import Logger
 import re
 import socket
-from typing import Any, Generator, Sequence, Tuple, Union
+from typing import Any, Generator, Mapping, Sequence, Tuple, Union
 
 from shapely import wkb, wkt
 from shapely.errors import WKBReadingError, WKTReadingError
@@ -102,8 +102,12 @@ class DatabaseTable(ABC):
         return self.__users
 
     @property
+    def exists(self) -> bool:
+        raise NotImplementedError
+
+    @property
     def schema(self) -> str:
-        """ SQL schema string of local table, given field names and types """
+        """ SQL schema string """
         raise NotImplementedError
 
     @property
@@ -137,11 +141,12 @@ class DatabaseTable(ABC):
 
     @property
     def records(self) -> [{str: Any}]:
+        """ list of records in the table """
         return self.records_where(None)
 
-    def records_where(self, where: {str: Union[Any, list]}) -> [{str: Any}]:
+    def records_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]) -> [{str: Any}]:
         """
-        records in the table that match the given key-value pairs
+        list of records in the table that match the query
 
         :param where: dictionary mapping keys to values, with which to match records
         :return: dictionaries of matching records
@@ -151,18 +156,27 @@ class DatabaseTable(ABC):
 
     def insert(self, records: [{str: Any}]):
         """
-        Insert the list of records into the table.
+        insert the list of records into the table
 
         :param records: dictionary records
         """
 
         raise NotImplementedError
 
+    def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
+        """
+        delete records from the table matching the given query
+
+        :param where: dictionary mapping keys to values, with which to match records
+        """
+
+        raise NotImplementedError
+
     def __getitem__(self, key: Any) -> {str: Any}:
         """
-        Query table for the given value of the primary key.
+        Return the record matching the given primary key value.
 
-        :param key: value to query from primary key
+        :param key: value of primary key
         :return: dictionary record
         """
 
@@ -197,7 +211,7 @@ class DatabaseTable(ABC):
 
     def __setitem__(self, key: Any, record: {str: Any}):
         """
-        Insert the given record into the table with the given primary key value.
+        Insert the given record into the table.
 
         :param key: value of primary key at which to insert record
         :param record: dictionary record
@@ -220,6 +234,34 @@ class DatabaseTable(ABC):
 
         self.insert([record])
 
+    def __delitem__(self, key: Any):
+        """
+        Delete the record matching the given primary key value.
+
+        :param key: value of primary key
+        """
+
+        if isinstance(key, dict):
+            if not all(field in key for field in self.primary_key):
+                raise ValueError(f'does not contain "{self.primary_key}"')
+            where = key
+        else:
+            if isinstance(key, Generator):
+                key = list(key)
+            elif not isinstance(key, Sequence) or isinstance(key, str):
+                key = [key]
+            if len(key) != len(self.primary_key):
+                raise ValueError(f'ambiguous value for primary key "{self.primary_key}"')
+            where = {field: key[index] for index, field in enumerate(self.primary_key)}
+
+        if not self.connected:
+            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
+
+        try:
+            self.delete_where(where)
+        except:
+            raise KeyError(f'no record with primary key "{key}"')
+
     def __len__(self) -> int:
         return len(self.records)
 
@@ -234,7 +276,7 @@ class DatabaseTable(ABC):
             return False
 
     @abstractmethod
-    def delete_remote_table(self):
+    def delete_table(self):
         raise NotImplementedError
 
     def __repr__(self) -> str:

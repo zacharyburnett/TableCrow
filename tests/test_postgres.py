@@ -95,22 +95,82 @@ class TestPostGresTable(unittest.TestCase):
                 if database_has_table(cursor, table_name):
                     cursor.execute(f'DROP TABLE {table_name};')
 
-        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                              ssh_password=self.ssh_password)
+        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field',
+                              username=self.username, password=self.password,
+                              ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
 
         test_remote_fields = table.remote_fields
 
         with self.connection:
             with self.connection.cursor() as cursor:
                 test_raw_remote_fields = database_table_fields(cursor, table_name)
-                table_exists = database_has_table(cursor, table_name)
-                if table_exists:
-                    cursor.execute(f'DROP TABLE {table_name};')
+                if table.exists:
+                    table.delete_table()
+                    table_exists = database_has_table(cursor, table_name)
+                    if table_exists:
+                        cursor.execute(f'DROP TABLE {table_name};')
 
         self.assertEqual(fields, test_remote_fields)
         self.assertEqual(list(fields), list(test_raw_remote_fields))
-        self.assertTrue(table_exists)
+        self.assertFalse(table_exists)
+
+    def test_compound_primary_key(self):
+        table_name = 'test_compound_primary_key'
+
+        fields = {
+            'primary_key_field_1': int,
+            'primary_key_field_2': str,
+            'primary_key_field_3': datetime,
+            'field_1': float,
+            'field_2': str,
+        }
+
+        records = [
+            {'primary_key_field_1': 1, 'primary_key_field_2': 'test 1', 'primary_key_field_3': datetime(2020, 1, 1),
+             'field_1': None, 'field_2': 'test 1'},
+            {'primary_key_field_1': 2, 'primary_key_field_2': 'test 1', 'primary_key_field_3': datetime(2020, 1, 2),
+             'field_1': 5.67, 'field_2': None},
+        ]
+
+        extra_record = {'primary_key_field_1': 3, 'primary_key_field_2': 'test 3', 'primary_key_field_3': datetime(2020, 1, 3),
+                        'field_1': 2.5, 'field_2': None}
+        extra_record_to_insert = {'primary_key_field_2': 'overwritten value', 'primary_key_field_3': datetime(2020, 1, 3),
+                                  'field_1': 2.5, 'field_2': None}
+
+        primary_key = ('primary_key_field_1', 'primary_key_field_2', 'primary_key_field_3')
+
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                if database_has_table(cursor, table_name):
+                    cursor.execute(f'DROP TABLE {table_name};')
+
+        table = PostGresTable(self.hostname, self.database, table_name, fields, primary_key,
+                              username=self.username, password=self.password,
+                              ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
+
+        test_primary_key = primary_key
+        table.insert(records)
+
+        with self.assertRaises(ValueError):
+            table[1]
+        with self.assertRaises(IndexError):
+            table[1] = extra_record_to_insert
+
+        table[3, 'test 3', datetime(2020, 1, 3)] = extra_record_to_insert
+
+        test_record = table[1, 'test 1', datetime(2020, 1, 1)]
+        test_records = table.records
+
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                test_raw_remote_fields = database_table_fields(cursor, table_name)
+                if database_has_table(cursor, table_name):
+                    cursor.execute(f'DROP TABLE {table_name};')
+
+        self.assertEqual(primary_key, test_primary_key)
+        self.assertEqual(records + [extra_record], test_records)
+        self.assertEqual(records[0], test_record)
+        self.assertEqual(list(fields), list(test_raw_remote_fields))
 
     def test_record_insertion(self):
         table_name = 'test_record_insertion'
@@ -134,13 +194,16 @@ class TestPostGresTable(unittest.TestCase):
                 if database_has_table(cursor, table_name):
                     cursor.execute(f'DROP TABLE {table_name};')
 
-        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                              ssh_password=self.ssh_password)
+        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field',
+                              username=self.username, password=self.password,
+                              ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
         table.insert(records)
         test_records_before_addition = table.records
         table[extra_record['primary_key_field']] = extra_record
         test_records_after_addition = table.records
+
+        del table[extra_record['primary_key_field']]
+        test_records_after_deletion = table.records
 
         records[0]['field_2'] = None
         records[1]['field_3'] = None
@@ -163,6 +226,7 @@ class TestPostGresTable(unittest.TestCase):
 
         self.assertEqual(records, test_records_before_addition)
         self.assertEqual(records + [extra_record], test_records_after_addition)
+        self.assertEqual(records, test_records_after_deletion)
 
     def test_table_flexibility(self):
         table_name = 'test_table_flexibility'
@@ -190,9 +254,8 @@ class TestPostGresTable(unittest.TestCase):
 
         # create table with incomplete fields
         incomplete_table = PostGresTable(self.hostname, self.database, table_name, incomplete_fields, 'primary_key_field',
-                                         username=self.username, password=self.password, ssh_hostname=self.ssh_hostname,
-                                         ssh_username=self.ssh_username,
-                                         ssh_password=self.ssh_password)
+                                         username=self.username, password=self.password,
+                                         ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
         incomplete_table.insert(records)
         incomplete_records = incomplete_table.records
 
@@ -202,9 +265,8 @@ class TestPostGresTable(unittest.TestCase):
 
         # create table with complete fields, pointing to existing remote table with incomplete fields
         complete_table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field',
-                                       username=self.username, password=self.password, ssh_hostname=self.ssh_hostname,
-                                       ssh_username=self.ssh_username,
-                                       ssh_password=self.ssh_password)
+                                       username=self.username, password=self.password,
+                                       ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
         complete_records = complete_table.records
 
         with self.connection:
@@ -213,9 +275,8 @@ class TestPostGresTable(unittest.TestCase):
 
         # create table with incomplete fields, pointing to existing remote table with complete fields
         completed_table = PostGresTable(self.hostname, self.database, table_name, incomplete_fields, 'primary_key_field',
-                                        username=self.username, password=self.password, ssh_hostname=self.ssh_hostname,
-                                        ssh_username=self.ssh_username,
-                                        ssh_password=self.ssh_password)
+                                        username=self.username, password=self.password,
+                                        ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
         completed_records = completed_table.records
 
         with self.connection:
@@ -252,9 +313,9 @@ class TestPostGresTable(unittest.TestCase):
                 if database_has_table(cursor, table_name):
                     cursor.execute(f'DROP TABLE {table_name};')
 
-        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                              ssh_password=self.ssh_password)
+        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field',
+                              username=self.username, password=self.password,
+                              ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
 
         table.insert(records)
 
@@ -296,9 +357,9 @@ class TestPostGresTable(unittest.TestCase):
                 if database_has_table(cursor, table_name):
                     cursor.execute(f'DROP TABLE {table_name};')
 
-        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                              ssh_password=self.ssh_password)
+        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field',
+                              username=self.username, password=self.password,
+                              ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
 
         table.insert(records)
 
@@ -319,6 +380,9 @@ class TestPostGresTable(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             table.records_where(1)
 
+        table.delete_where({'field_1': datetime(2020, 1, 1)})
+        test_records_after_deletion = table.records
+
         with self.connection:
             with self.connection.cursor() as cursor:
                 cursor.execute(f'DROP TABLE {table_name};')
@@ -330,6 +394,7 @@ class TestPostGresTable(unittest.TestCase):
         self.assertEqual([records[1]], test_record_query_5)
         self.assertEqual([records[1]], test_record_query_6)
         self.assertEqual([records[3]], test_record_query_7)
+        self.assertEqual(records[1:], test_records_after_deletion)
 
     def test_field_reorder(self):
         table_name = 'test_field_reorder'
@@ -357,9 +422,9 @@ class TestPostGresTable(unittest.TestCase):
                 if database_has_table(cursor, table_name):
                     cursor.execute(f'DROP TABLE {table_name};')
 
-        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                              ssh_password=self.ssh_password)
+        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field',
+                              username=self.username, password=self.password,
+                              ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
         table.insert(records)
         test_records = table.records
 
@@ -368,9 +433,8 @@ class TestPostGresTable(unittest.TestCase):
                 test_fields = database_table_fields(cursor, table_name)
 
         reordered_table = PostGresTable(self.hostname, self.database, table_name, reordered_fields, 'primary_key_field',
-                                        username=self.username, password=self.password, ssh_hostname=self.ssh_hostname,
-                                        ssh_username=self.ssh_username,
-                                        ssh_password=self.ssh_password)
+                                        username=self.username, password=self.password,
+                                        ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
         test_reordered_records = reordered_table.records
 
         with self.connection:
@@ -404,9 +468,9 @@ class TestPostGresTable(unittest.TestCase):
                 if database_has_table(cursor, table_name):
                     cursor.execute(f'DROP TABLE {table_name};')
 
-        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field', username=self.username,
-                              password=self.password, ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username,
-                              ssh_password=self.ssh_password)
+        table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field',
+                              username=self.username, password=self.password,
+                              ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
         table[record_with_extra_field['primary_key_field']] = record_with_extra_field
         test_records = table.records
 
@@ -466,8 +530,8 @@ class TestPostGresTable(unittest.TestCase):
                     cursor.execute(f'DROP TABLE {table_name};')
 
         table = PostGresTable(self.hostname, self.database, table_name, fields, 'primary_key_field',
-                              username=self.username, password=self.password, ssh_hostname=self.ssh_hostname,
-                              ssh_username=self.ssh_username, ssh_password=self.ssh_password)
+                              username=self.username, password=self.password,
+                              ssh_hostname=self.ssh_hostname, ssh_username=self.ssh_username, ssh_password=self.ssh_password)
         table.insert(records)
 
         test_query_1 = table.records_intersecting(inside_polygon)
