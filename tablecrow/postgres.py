@@ -2,7 +2,6 @@ from datetime import date, datetime
 from functools import partial
 from logging import Logger
 import re
-import typing
 from typing import Any, Collection, Mapping, Sequence, Union
 
 import psycopg2
@@ -134,6 +133,12 @@ class PostGresTable(DatabaseTable):
                         cursor.execute(f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};')
 
     @property
+    def exists(self) -> bool:
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                return database_has_table(cursor, self.name)
+
+    @property
     def schema(self) -> str:
         """ PostGreSQL schema string """
 
@@ -208,7 +213,7 @@ class PostGresTable(DatabaseTable):
             except psycopg2.OperationalError:
                 return False
 
-    def records_where(self, where: {str: Union[Any, list]}) -> [{str: Any}]:
+    def records_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]) -> [{str: Any}]:
         if not self.connected:
             raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
 
@@ -287,7 +292,7 @@ class PostGresTable(DatabaseTable):
                                            f'WHERE {primary_key_string} = %s;',
                                            [geometry.wkt, self.crs.to_epsg(), primary_key_value])
 
-    def delete_where(self, where: {str: Union[Any, list]}):
+    def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
         if not self.connected:
             raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
 

@@ -5,7 +5,7 @@ import logging
 from logging import Logger
 import re
 import socket
-from typing import Any, Generator, Sequence, Tuple, Union
+from typing import Any, Generator, Mapping, Sequence, Tuple, Union
 
 from shapely import wkb, wkt
 from shapely.errors import WKBReadingError, WKTReadingError
@@ -102,6 +102,10 @@ class DatabaseTable(ABC):
         return self.__users
 
     @property
+    def exists(self) -> bool:
+        raise NotImplementedError
+
+    @property
     def schema(self) -> str:
         """ SQL schema string """
         raise NotImplementedError
@@ -140,7 +144,7 @@ class DatabaseTable(ABC):
         """ list of records in the table """
         return self.records_where(None)
 
-    def records_where(self, where: {str: Union[Any, list]}) -> [{str: Any}]:
+    def records_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]) -> [{str: Any}]:
         """
         list of records in the table that match the query
 
@@ -159,7 +163,7 @@ class DatabaseTable(ABC):
 
         raise NotImplementedError
 
-    def delete_where(self, where: {str: Union[Any, list]}):
+    def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
         """
         delete records from the table matching the given query
 

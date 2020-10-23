@@ -147,7 +147,7 @@ records = table.records_intersecting(box(268397.8, 4392279.8, 320292.0, 4407509.
 ## Extending
 To create a table interface, extend `DatabaseTable` as so:
 ```python
-from typing import Any, Union
+from typing import Any, Mapping, Sequence, Union
 
 from tablecrow.table import DatabaseTable
 
@@ -158,6 +158,10 @@ class CustomDatabaseTable(DatabaseTable):
         raise NotImplementedError('implement database connection and table creation here')
 
     @property
+    def exists(self) -> bool:
+        raise NotImplementedError('implement database table existence check here')
+
+    @property
     def schema(self) -> str:
         raise NotImplementedError('implement string generation for the database schema here')
 
@@ -165,13 +169,13 @@ class CustomDatabaseTable(DatabaseTable):
     def remote_fields(self) -> {str: type}:
         raise NotImplementedError('implement accessor for database fields here')
 
-    def records_where(self, where: {str: Union[Any, list]}) -> [{str: Any}]:
+    def records_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]) -> [{str: Any}]:
         raise NotImplementedError('implement database record query here')
 
     def insert(self, records: [{str: Any}]):
         raise NotImplementedError('implement database record insertion here')
 
-    def delete_where(self, where: {str: Union[Any, list]}) -> [{str: Any}]:
+    def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]) -> [{str: Any}]:
         raise NotImplementedError('implement database record deletion here')
 
     def delete_table(self):
