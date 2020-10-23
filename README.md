@@ -7,7 +7,6 @@
 
 `tablecrow` is an abstraction library over a generalized database table.
 Currently, `tablecrow` offers an abstraction for PostGreSQL tables with simple PostGIS operations. 
-
 ```bash
 pip install tablecrow
 ```
@@ -21,7 +20,6 @@ from datetime import datetime
 fields = {'id': int, 'time': datetime, 'length': float, 'name': str}
 record = {'id': 1, 'time': datetime(2020, 1, 1), 'length': 4.4, 'name': 'long boi'}
 ```
-
 For databases with a spatial extension, you can use [Shapely geometries](https://shapely.readthedocs.io/en/stable/manual.html#geometric-objects):
 ```python
 from shapely.geometry import Polygon
@@ -31,7 +29,7 @@ record = {'id': 1, 'polygon': Polygon([(-77.1, 39.65), (-77.1, 39.725), (-77.4, 
 ```
 
 ## Usage
-#### creating a simple table (single primary key, no geometries)
+#### create a simple table (single primary key, no geometries)
 ```python
 from datetime import datetime
 
@@ -47,24 +45,34 @@ table = PostGresTable(
     password='<password>',
 )
 
-# you can add a list of records with `.insert()`
+# add a list of records
 table.insert([
     {'id': 1, 'time': datetime(2020, 1, 1), 'length': 4.4, 'name': 'long boi'},
     {'id': 3, 'time': datetime(2020, 1, 3), 'length': 2, 'name': 'short boi'},
     {'id': 2},
+    {'id': 15, 'time': datetime(2020, 3, 3)},
 ])
 
-# or alternatively set or access a primary key value with square bracket indexing
+# set, access, or delete a single record using its primary key value
 table[4] = {'time': datetime(2020, 1, 4), 'length': 5, 'name': 'long'}
 record = table[3]
+del table[2]
 
-# you can query the database with a filtering dictionary or a SQL `WHERE` clause
+# list of records in the table
+num_records = len(table)
+records = table.records
+
+# query the database with a dictionary, or a SQL `WHERE` clause as a string
 records = table.records_where({'name': 'short boi'})
+records = table.records_where({'name': None})
 records = table.records_where({'name': '%long%'})
 records = table.records_where("time <= '20200102'::date")
 records = table.records_where("length > 2 OR name ILIKE '%short%'")
+
+# delete records with a query
+table.delete_where({'name': None})
 ```
-#### creating a table with multiple primary key fields
+#### create a table with multiple primary key fields
 ```python
 from datetime import datetime
 
@@ -93,7 +101,7 @@ table.insert([
 table[4, 'long'] = {'time': datetime(2020, 1, 4), 'length': 5}
 record = table[3, 'long boi']
 ```
-#### creating a table with geometry fields
+#### create a table with geometry fields
 the database must have a spatial extension (such as PostGIS) installed
 ```python
 from pyproj import CRS
@@ -163,7 +171,10 @@ class CustomDatabaseTable(DatabaseTable):
     def insert(self, records: [{str: Any}]):
         raise NotImplementedError('implement database record insertion here')
 
-    def delete_remote_table(self):
+    def delete_where(self, where: {str: Union[Any, list]}) -> [{str: Any}]:
+        raise NotImplementedError('implement database record deletion here')
+
+    def delete_table(self):
         raise NotImplementedError('implement database table deletion here')
 ```
 

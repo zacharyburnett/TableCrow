@@ -142,6 +142,9 @@ class TestPostGresTable(unittest.TestCase):
         table[extra_record['primary_key_field']] = extra_record
         test_records_after_addition = table.records
 
+        del table[extra_record['primary_key_field']]
+        test_records_after_deletion = table.records
+
         records[0]['field_2'] = None
         records[1]['field_3'] = None
 
@@ -163,6 +166,7 @@ class TestPostGresTable(unittest.TestCase):
 
         self.assertEqual(records, test_records_before_addition)
         self.assertEqual(records + [extra_record], test_records_after_addition)
+        self.assertEqual(records, test_records_after_deletion)
 
     def test_table_flexibility(self):
         table_name = 'test_table_flexibility'
@@ -319,6 +323,9 @@ class TestPostGresTable(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             table.records_where(1)
 
+        table.delete_where({'field_1': datetime(2020, 1, 1)})
+        test_records_after_deletion = table.records
+
         with self.connection:
             with self.connection.cursor() as cursor:
                 cursor.execute(f'DROP TABLE {table_name};')
@@ -330,6 +337,7 @@ class TestPostGresTable(unittest.TestCase):
         self.assertEqual([records[1]], test_record_query_5)
         self.assertEqual([records[1]], test_record_query_6)
         self.assertEqual([records[3]], test_record_query_7)
+        self.assertEqual(records[1:], test_records_after_deletion)
 
     def test_field_reorder(self):
         table_name = 'test_field_reorder'
