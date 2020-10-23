@@ -145,7 +145,7 @@ records = table.records_intersecting(box(268397.8, 4392279.8, 320292.0, 4407509.
 ```
 
 ## Extending
-To create a table interface, extend `DatabaseTable` as so:
+to write your own custom table interface, extend `DatabaseTable`:
 ```python
 from typing import Any, Mapping, Sequence, Union
 
