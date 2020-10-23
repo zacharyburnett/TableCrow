@@ -132,3 +132,6 @@ records = table.records_intersecting(big_box, geometry_fields=['polygon'])
 records = table.records_intersecting(box(268397.8, 4392279.8, 320292.0, 4407509.6), crs=CRS.from_epsg(32618),
                                      geometry_fields=['polygon'])
 ```
+
+## Acknowledgements
+The original core code and methodology of `tablecrow` was developed for the National Bathymetric Source project under the [Office of Coast Survey of the National Oceanic and Atmospheric Administration (NOAA)](https://nauticalcharts.noaa.gov), a part of the United States Department of Commerce.
