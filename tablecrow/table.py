@@ -220,15 +220,6 @@ class DatabaseTable(ABC):
 
         self.insert([record])
 
-    @abstractmethod
-    def execute(self, sql: str):
-        """
-        Execute given SQL statement on the database.
-        :param sql: SQL statement
-        """
-
-        raise NotImplementedError
-
     def __len__(self) -> int:
         return len(self.records)
 

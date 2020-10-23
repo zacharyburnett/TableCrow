@@ -350,11 +350,6 @@ class PostGresTable(DatabaseTable):
                                            f'WHERE {primary_key_string} = %s;',
                                            [geometry.wkt, self.crs.to_epsg(), primary_key_value])
 
-    def execute(self, sql: str):
-        with self.connection:
-            with self.connection.cursor() as cursor:
-                cursor.execute(sql)
-
     def __len__(self) -> int:
         with self.connection:
             with self.connection.cursor() as cursor:

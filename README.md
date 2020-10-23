@@ -12,23 +12,26 @@ Currently, `tablecrow` offers an abstraction for PostGreSQL tables with simple P
 pip install tablecrow
 ```
 
-## Data Model:
-`tablecrow` sees a database record / row as a dictionary of field names to values:
+## Data Model
+`tablecrow` sees a database schema as a mapping of field names to Python types, 
+and a database record / row as a mapping of field names to values:
 ```python
+from datetime import datetime
+
+fields = {'id': int, 'time': datetime, 'length': float, 'name': str}
 record = {'id': 1, 'time': datetime(2020, 1, 1), 'length': 4.4, 'name': 'long boi'}
 ```
 
-Similarly, a database schema is seen as a dictionary of field names to Python types:
+For databases with a spatial extension, you can use [Shapely geometries](https://shapely.readthedocs.io/en/stable/manual.html#geometric-objects):
 ```python
-fields = {'id': int, 'time': datetime, 'length': float, 'name': str}
-```
+from shapely.geometry import Polygon
 
-This also includes [Shapely geometric types](https://shapely.readthedocs.io/en/stable/manual.html#geometric-objects):
-```python
 fields = {'id': int, 'polygon': Polygon}
+record = {'id': 1, 'polygon': Polygon([(-77.1, 39.65), (-77.1, 39.725), (-77.4, 39.725), (-77.4, 39.65), (-77.1, 39.65)])}
 ```
 
-## Usage:
+## Usage
+#### creating a simple table (single primary key, no geometries)
 ```python
 from datetime import datetime
 
@@ -61,7 +64,7 @@ records = table.records_where({'name': '%long%'})
 records = table.records_where("time <= '20200102'::date")
 records = table.records_where("length > 2 OR name ILIKE '%short%'")
 ```
-#### compound primary key
+#### creating a table with multiple primary key fields
 ```python
 from datetime import datetime
 
@@ -90,8 +93,8 @@ table.insert([
 table[4, 'long'] = {'time': datetime(2020, 1, 4), 'length': 5}
 record = table[3, 'long boi']
 ```
-
-#### geometries
+#### creating a table with geometry fields
+the database must have a spatial extension (such as PostGIS) installed
 ```python
 from pyproj import CRS
 from shapely.geometry import MultiPolygon, Polygon, box
@@ -131,6 +134,37 @@ records = table.records_intersecting(big_box, geometry_fields=['polygon'])
 # you can also provide geometries in a different CRS
 records = table.records_intersecting(box(268397.8, 4392279.8, 320292.0, 4407509.6), crs=CRS.from_epsg(32618),
                                      geometry_fields=['polygon'])
+```
+
+## Extending
+To create a table interface, extend `DatabaseTable` as so:
+```python
+from typing import Any, Union
+
+from tablecrow.table import DatabaseTable
+
+
+class CustomDatabaseTable(DatabaseTable):
+    def __init__(self, hostname: str, database: str, name: str, fields: {str: type}):
+        super().__init__(hostname, database, name, fields)
+        raise NotImplementedError('implement database connection and table creation here')
+
+    @property
+    def schema(self) -> str:
+        raise NotImplementedError('implement string generation for the database schema here')
+
+    @property
+    def remote_fields(self) -> {str: type}:
+        raise NotImplementedError('implement accessor for database fields here')
+
+    def records_where(self, where: {str: Union[Any, list]}) -> [{str: Any}]:
+        raise NotImplementedError('implement database record query here')
+
+    def insert(self, records: [{str: Any}]):
+        raise NotImplementedError('implement database record insertion here')
+
+    def delete_remote_table(self):
+        raise NotImplementedError('implement database table deletion here')
 ```
 
 ## Acknowledgements
