@@ -14,7 +14,7 @@ setup(
     long_description_content_type="text/markdown",
     url=metadata['url'],
     packages=find_packages(),
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     setup_requires=['dunamai', 'setuptools>=41.2', 'wheel'],
     install_requires=[
         'psycopg2-binary',
