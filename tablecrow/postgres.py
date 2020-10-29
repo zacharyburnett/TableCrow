@@ -2,7 +2,7 @@ from datetime import date, datetime
 from functools import partial
 from logging import Logger
 import re
-from typing import Any, Collection, Mapping, Sequence, Union, get_args as typing_get_args
+from typing import Any, Collection, Mapping, Sequence, Tuple, Union, get_args as typing_get_args
 
 import psycopg2
 from pyproj import CRS
@@ -39,7 +39,7 @@ class PostGresTable(DatabaseTable):
             database: str,
             name: str,
             fields: {str: type},
-            primary_key: str = None,
+            primary_key: Union[str, Tuple[str]] = None,
             crs: CRS = None,
             username: str = None,
             password: str = None,
