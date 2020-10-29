@@ -157,6 +157,19 @@ from typing import Any, Mapping, Sequence, Union
 from tablecrow.table import DatabaseTable
 
 
+FIELD_TYPES = {
+    'NoneType': '',
+    'bool': '',
+    'float': '',
+    'int': '',
+    'str': '',
+    'bytes': '',
+    'date': '',
+    'time': '',
+    'datetime': '',
+    'timedelta': '',
+}
+
 class CustomDatabaseTable(DatabaseTable):
     def __init__(self, hostname: str, database: str, name: str, fields: {str: type}):
         super().__init__(hostname, database, name, fields)
