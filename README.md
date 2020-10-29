@@ -157,21 +157,21 @@ from typing import Any, Mapping, Sequence, Union
 from tablecrow.table import DatabaseTable
 
 
-# mapping from Python types to database types
-FIELD_TYPES = {
-    'NoneType': '',
-    'bool': '',
-    'float': '',
-    'int': '',
-    'str': '',
-    'bytes': '',
-    'date': '',
-    'time': '',
-    'datetime': '',
-    'timedelta': '',
-}
-
 class CustomDatabaseTable(DatabaseTable):
+    # mapping from Python types to database types
+    FIELD_TYPES = {
+        'NoneType': '',
+        'bool': '',
+        'float': '',
+        'int': '',
+        'str': '',
+        'bytes': '',
+        'date': '',
+        'time': '',
+        'datetime': '',
+        'timedelta': '',
+    }
+
     def __init__(self, hostname: str, database: str, name: str, fields: {str: type}):
         super().__init__(hostname, database, name, fields)
         raise NotImplementedError('implement database connection and table creation here')
