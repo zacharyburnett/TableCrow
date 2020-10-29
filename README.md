@@ -141,8 +141,11 @@ records = table.records_intersecting(big_box)
 records = table.records_intersecting(big_box, geometry_fields=['polygon'])
 
 # you can also provide geometries in a different CRS
-records = table.records_intersecting(box(268397.8, 4392279.8, 320292.0, 4407509.6), crs=CRS.from_epsg(32618),
-                                     geometry_fields=['polygon'])
+records = table.records_intersecting(
+    box(268397.8, 4392279.8, 320292.0, 4407509.6),
+    crs=CRS.from_epsg(32618),
+    geometry_fields=['polygon'],
+)
 ```
 
 ## Extending
