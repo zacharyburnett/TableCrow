@@ -17,6 +17,6 @@ setup(
     python_requires='>=3.8',
     setup_requires=['dunamai', 'setuptools>=41.2', 'wheel'],
     install_requires=['psycopg2-binary', 'pyproj', 'shapely', 'sshtunnel'],
-    extras_require={'dev': ['coverage', 'flake8', 'nose']},
+    extras_require={'testing': ['coverage', 'flake8', 'nose'], 'development': ['oitnb']},
     test_suite='nose.collector',
 )
