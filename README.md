@@ -33,7 +33,6 @@ record = {'id': 1, 'polygon': Polygon([(-77.1, 39.65), (-77.1, 39.725), (-77.4, 
 #### create a simple table (single primary key, no geometries)
 ```python
 from datetime import datetime
-
 from tablecrow import PostGresTable
 
 table = PostGresTable(
@@ -76,7 +75,6 @@ table.delete_where({'name': None})
 #### create a table with multiple primary key fields
 ```python
 from datetime import datetime
-
 from tablecrow import PostGresTable
 
 table = PostGresTable(
@@ -107,7 +105,6 @@ the database must have a spatial extension (such as PostGIS) installed
 ```python
 from pyproj import CRS
 from shapely.geometry import MultiPolygon, Polygon, box
-
 from tablecrow import PostGresTable
 
 table = PostGresTable(
@@ -143,7 +140,7 @@ records = table.records_intersecting(big_box, geometry_fields=['polygon'])
 
 # you can also provide geometries in a different CRS
 records = table.records_intersecting(
-    big_box_in_different_crs,
+    big_box_in_utm18n,
     crs=CRS.from_epsg(32618),
     geometry_fields=['polygon'],
 )
@@ -153,9 +150,7 @@ records = table.records_intersecting(
 to write your own custom table interface, extend `DatabaseTable`:
 ```python
 from typing import Any, Mapping, Sequence, Union
-
 from tablecrow.table import DatabaseTable
-
 
 class CustomDatabaseTable(DatabaseTable):
     # mapping from Python types to database types
@@ -194,7 +189,7 @@ class CustomDatabaseTable(DatabaseTable):
     def insert(self, records: [{str: Any}]):
         raise NotImplementedError('implement database record insertion here')
 
-    def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]) -> [{str: Any}]:
+    def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
         raise NotImplementedError('implement database record deletion here')
 
     def delete_table(self):
