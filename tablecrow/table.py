@@ -17,9 +17,18 @@ class DatabaseTable(ABC):
     DEFAULT_PORT = NotImplementedError
     FIELD_TYPES: {str: str} = NotImplementedError
 
-    def __init__(self, hostname: str, database: str, name: str, fields: {str: type},
-                 primary_key: Union[str, Tuple[str]] = None, username: str = None, password: str = None, users: [str] = None,
-                 logger: Logger = None):
+    def __init__(
+            self,
+            hostname: str,
+            database: str,
+            name: str,
+            fields: {str: type},
+            primary_key: Union[str, Tuple[str]] = None,
+            username: str = None,
+            password: str = None,
+            users: [str] = None,
+            logger: Logger = None,
+    ):
         """
         Create a new database table interface.
 
@@ -134,7 +143,9 @@ class DatabaseTable(ABC):
         """ whether network connection exists to database server """
         try:
             socket.setdefaulttimeout(2)
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((self.hostname, self.port))
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(
+                (self.hostname, self.port)
+            )
             return True
         except socket.error:
             return False
@@ -144,7 +155,9 @@ class DatabaseTable(ABC):
         """ list of records in the table """
         return self.records_where(None)
 
-    def records_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]) -> [{str: Any}]:
+    def records_where(
+            self, where: Union[Mapping[str, Any], str, Sequence[str]]
+    ) -> [{str: Any}]:
         """
         list of records in the table that match the query
 
@@ -194,13 +207,17 @@ class DatabaseTable(ABC):
             where = {field: key[index] for index, field in enumerate(self.primary_key)}
 
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
+            raise ConnectionError(
+                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+            )
 
         try:
             records = self.records_where(where)
 
             if len(records) > 1:
-                self.logger.warning(f'found more than one record matching query {where}: {records}')
+                self.logger.warning(
+                    f'found more than one record matching query {where}: {records}'
+                )
 
             if len(records) > 0:
                 return records[0]
@@ -230,7 +247,9 @@ class DatabaseTable(ABC):
             record[primary_key] = key[key_index]
 
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
+            raise ConnectionError(
+                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+            )
 
         self.insert([record])
 
@@ -255,7 +274,9 @@ class DatabaseTable(ABC):
             where = {field: key[index] for index, field in enumerate(self.primary_key)}
 
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
+            raise ConnectionError(
+                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+            )
 
         try:
             self.delete_where(where)
@@ -267,7 +288,9 @@ class DatabaseTable(ABC):
 
     def __contains__(self, key: Any) -> bool:
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}')
+            raise ConnectionError(
+                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+            )
 
         try:
             self[key]
@@ -280,9 +303,11 @@ class DatabaseTable(ABC):
         raise NotImplementedError
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.name)}, ' \
-               f'{repr(self.fields)}, {repr(self.primary_key)}, ' \
-               f'{repr(self.username)}, {repr(re.sub(".", "*", self.password))}, {repr(self.users)})'
+        return (
+            f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.name)}, '
+            f'{repr(self.fields)}, {repr(self.primary_key)}, '
+            f'{repr(self.username)}, {repr(re.sub(".", "*", self.password))}, {repr(self.users)})'
+        )
 
 
 def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: Any}:
@@ -301,7 +326,11 @@ def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: A
 
             if value_type is not field_type and value is not None:
                 if field_type is bool:
-                    value = bool(value) if value_type is not str else literal_eval(value.capitalize())
+                    value = (
+                        bool(value)
+                        if value_type is not str
+                        else literal_eval(value.capitalize())
+                    )
                 elif field_type is int:
                     value = int(value)
                 elif field_type is float:
@@ -364,12 +393,19 @@ def flatten_geometry(geometry: BaseGeometry) -> BaseGeometry:
 
     # strip 3rd dimension
     if 'POLYGON Z' in geometry.wkt:
-        polygons = [polygon for polygon in geometry] if geometry_type is MultiPolygon else [geometry]
+        polygons = (
+            [polygon for polygon in geometry] if geometry_type is MultiPolygon else [geometry]
+        )
         for polygon_index, polygon in enumerate(polygons):
             exterior_2d = LinearRing([vertex[:2] for vertex in polygon.exterior.coords])
-            interiors_2d = [LinearRing([vertex[:2] for vertex in interior.coords]) for interior in polygon.interiors]
+            interiors_2d = [
+                LinearRing([vertex[:2] for vertex in interior.coords])
+                for interior in polygon.interiors
+            ]
             polygons[polygon_index] = Polygon(exterior_2d, interiors_2d)
-        geometry = MultiPolygon(polygons) if geometry_type is MultiPolygon else Polygon(polygons[0])
+        geometry = (
+            MultiPolygon(polygons) if geometry_type is MultiPolygon else Polygon(polygons[0])
+        )
 
     if not geometry.is_valid:
         geometry = geometry.buffer(0)
