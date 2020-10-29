@@ -157,6 +157,7 @@ from typing import Any, Mapping, Sequence, Union
 from tablecrow.table import DatabaseTable
 
 
+# mapping from Python types to database types
 FIELD_TYPES = {
     'NoneType': '',
     'bool': '',
