@@ -125,6 +125,7 @@ big_box = box(-77.4, 39.65, -77.1, 39.725)
 little_box_inside_big_box = box(-77.7, 39.725, -77.4, 39.8)
 little_box_touching_big_box = box(-77.1, 39.575, -76.8, 39.65)
 disparate_box = box(-77.7, 39.425, -77.4, 39.5)
+big_box_in_utm18n = box(268397.8, 4392279.8, 320292.0, 4407509.6)
 
 multi_box = MultiPolygon([little_box_inside_big_box, little_box_touching_big_box])
 
@@ -141,8 +142,11 @@ records = table.records_intersecting(big_box)
 records = table.records_intersecting(big_box, geometry_fields=['polygon'])
 
 # you can also provide geometries in a different CRS
-records = table.records_intersecting(box(268397.8, 4392279.8, 320292.0, 4407509.6), crs=CRS.from_epsg(32618),
-                                     geometry_fields=['polygon'])
+records = table.records_intersecting(
+    big_box_in_different_crs,
+    crs=CRS.from_epsg(32618),
+    geometry_fields=['polygon'],
+)
 ```
 
 ## Extending
@@ -154,6 +158,20 @@ from tablecrow.table import DatabaseTable
 
 
 class CustomDatabaseTable(DatabaseTable):
+    # mapping from Python types to database types
+    FIELD_TYPES = {
+        'NoneType': '',
+        'bool': '',
+        'float': '',
+        'int': '',
+        'str': '',
+        'bytes': '',
+        'date': '',
+        'time': '',
+        'datetime': '',
+        'timedelta': '',
+    }
+
     def __init__(self, hostname: str, database: str, name: str, fields: {str: type}):
         super().__init__(hostname, database, name, fields)
         raise NotImplementedError('implement database connection and table creation here')

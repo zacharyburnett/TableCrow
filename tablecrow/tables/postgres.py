@@ -7,7 +7,6 @@ from typing import (
     Collection,
     Mapping,
     Sequence,
-    Tuple,
     Union,
     get_args as typing_get_args,
 )
@@ -52,7 +51,7 @@ class PostGresTable(DatabaseTable):
             database: str,
             name: str,
             fields: {str: type},
-            primary_key: Union[str, Tuple[str]] = None,
+            primary_key: Union[str, Sequence[str]] = None,
             crs: CRS = None,
             username: str = None,
             password: str = None,

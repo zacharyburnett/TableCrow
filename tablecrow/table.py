@@ -5,7 +5,7 @@ import logging
 from logging import Logger
 import re
 import socket
-from typing import Any, Generator, Mapping, Sequence, Tuple, Union
+from typing import Any, Generator, Mapping, Sequence, Union
 
 from shapely import wkb, wkt
 from shapely.errors import WKBReadingError, WKTReadingError
@@ -23,7 +23,7 @@ class DatabaseTable(ABC):
             database: str,
             name: str,
             fields: {str: type},
-            primary_key: Union[str, Tuple[str]] = None,
+            primary_key: Union[str, Sequence[str]] = None,
             username: str = None,
             password: str = None,
             users: [str] = None,
