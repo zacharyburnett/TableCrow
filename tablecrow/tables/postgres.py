@@ -2,14 +2,27 @@ from datetime import date, datetime
 from functools import partial
 from logging import Logger
 import re
-from typing import Any, Collection, Mapping, Sequence, Tuple, Union, get_args as typing_get_args
+from typing import (
+    Any,
+    Collection,
+    Mapping,
+    Sequence,
+    Tuple,
+    Union,
+    get_args as typing_get_args,
+)
 
 import psycopg2
 from pyproj import CRS
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry, GEOMETRY_TYPES
 from sshtunnel import SSHTunnelForwarder
 
-from .table import DatabaseTable, parse_record_values, random_open_tcp_port, split_URL_port
+from ..table import (
+    DatabaseTable,
+    parse_record_values,
+    random_open_tcp_port,
+    split_URL_port,
+)
 
 DEFAULT_CRS = CRS.from_epsg(4326)
 SSH_DEFAULT_PORT = 22
@@ -481,7 +494,7 @@ class PostGresTable(DatabaseTable):
         return (
             f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.name)}, '
             f'{repr(self.fields)}, {repr(self.primary_key)}, {repr(self.crs.to_epsg())}, '
-            f'{repr(self.username)}, {repr(re.sub(".", "*", self.password))}, {repr(self.users)})'
+            f'{repr(self.username)}, {repr(re.sub("..", "*", self.password))}, {repr(self.users)})'
         )
 
     def __del__(self):

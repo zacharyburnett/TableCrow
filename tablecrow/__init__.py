@@ -1,1 +1,1 @@
-from .postgres import PostGresTable
+from .tables import PostGresTable

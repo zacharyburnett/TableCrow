@@ -8,13 +8,13 @@ from pyproj import CRS
 from shapely.geometry import MultiPolygon, Point, box
 from sshtunnel import SSHTunnelForwarder
 
-from tablecrow.postgres import (
-    PostGresTable,
+from tablecrow import PostGresTable
+from tablecrow.table import random_open_tcp_port, split_URL_port
+from tablecrow.tables.postgres import (
     SSH_DEFAULT_PORT,
     database_has_table,
     database_table_fields,
 )
-from tablecrow.table import random_open_tcp_port, split_URL_port
 from tablecrow.utilities import read_configuration, repository_root
 
 CREDENTIALS_FILENAME = repository_root() / 'credentials.config'
