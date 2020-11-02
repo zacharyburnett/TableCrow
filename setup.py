@@ -8,6 +8,7 @@ except ImportError:
     import subprocess
 
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'dunamai'])
+    from dunamai import Version
 
 metadata = config.read_configuration('setup.cfg')['metadata']
 
