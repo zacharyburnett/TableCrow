@@ -1,6 +1,13 @@
 #!/usr/bin/env python
-from dunamai import Version
 from setuptools import config, find_packages, setup
+
+try:
+    from dunamai import Version
+except ImportError:
+    import sys
+    import subprocess
+
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'dunamai'])
 
 metadata = config.read_configuration('setup.cfg')['metadata']
 
@@ -15,7 +22,7 @@ setup(
     url=metadata['url'],
     packages=find_packages(),
     python_requires='>=3.8',
-    setup_requires=['dunamai', 'setuptools>=41.2', 'wheel'],
+    setup_requires=['dunamai', 'setuptools>=41.2'],
     install_requires=['psycopg2-binary', 'pyproj', 'shapely', 'sshtunnel'],
     extras_require={'testing': ['coverage', 'flake8', 'nose'], 'development': ['oitnb']},
     test_suite='nose.collector',
