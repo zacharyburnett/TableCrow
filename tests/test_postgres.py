@@ -186,7 +186,7 @@ def test_compound_primary_key(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        name=table_name, fields=fields, primary_key=primary_key, **CREDENTIALS['database'],
+        name=table_name, fields=fields, primary_key=primary_key, **CREDENTIALS['database']
     )
 
     test_primary_key = primary_key
