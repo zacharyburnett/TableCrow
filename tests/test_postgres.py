@@ -21,20 +21,26 @@ CREDENTIALS_FILENAME = repository_root() / 'credentials.config'
 CREDENTIALS = read_configuration(CREDENTIALS_FILENAME)
 
 if 'database' not in CREDENTIALS:
-    CREDENTIALS['database'] = {
-        'hostname': os.environ['POSTGRES_HOSTNAME'],
-        'database': os.environ['POSTGRES_DATABASE'],
-        'username': os.environ['POSTGRES_USERNAME'],
-        'password': os.environ['POSTGRES_PASSWORD']
-    }
-    if 'ssh_hostname' in os.environ:
-        CREDENTIALS['database']['ssh_hostname'] = os.environ['SSH_HOSTNAME']
-    if 'ssh_username' in os.environ:
-        CREDENTIALS['database']['ssh_username'] = os.environ['SSH_USERNAME']
-    if 'ssh_password' in os.environ:
-        CREDENTIALS['database']['ssh_password'] = os.environ['SSH_PASSWORD']
+    CREDENTIALS['database'] = {}
 
-if 'ssh_hostname' in CREDENTIALS['database'] and CREDENTIALS['database']['ssh_hostname'] is not None:
+default_credentials = {
+    'hostname': ('POSTGRES_HOSTNAME', 'localhost'),
+    'database': ('POSTGRES_DATABASE', 'postgres'),
+    'username': ('POSTGRES_USERNAME', 'postgres'),
+    'password': ('POSTGRES_PASSWORD', ''),
+    'ssh_hostname': ('SSH_HOSTNAME', None),
+    'ssh_username': ('SSH_USERNAME', None),
+    'ssh_password': ('SSH_PASSWORD', None),
+}
+
+for credential, details in default_credentials.items():
+    if credential not in CREDENTIALS['database']:
+        CREDENTIALS['database'][credential] = os.getenv(*details)
+
+if (
+        'ssh_hostname' in CREDENTIALS['database']
+        and CREDENTIALS['database']['ssh_hostname'] is not None
+):
     hostname, port = split_URL_port(CREDENTIALS['database']['hostname'])
     if port is None:
         port = PostGresTable.DEFAULT_PORT
@@ -53,14 +59,14 @@ if 'ssh_hostname' in CREDENTIALS['database'] and CREDENTIALS['database']['ssh_ho
 
     ssh_password = CREDENTIALS['database']['ssh_password']
 
-    TUNNEL = SSHTunnelForwarder((ssh_hostname, ssh_port),
-                                ssh_username=ssh_username, ssh_password=ssh_password,
-                                remote_bind_address=('localhost', port),
-                                local_bind_address=('localhost', random_open_tcp_port()))
-    try:
-        TUNNEL.start()
-    except Exception as error:
-        raise ConnectionError(error)
+    TUNNEL = SSHTunnelForwarder(
+        (ssh_hostname, ssh_port),
+        ssh_username=ssh_username,
+        ssh_password=ssh_password,
+        remote_bind_address=('localhost', port),
+        local_bind_address=('localhost', random_open_tcp_port()),
+    )
+    TUNNEL.start()
 else:
     TUNNEL = None
 
@@ -71,8 +77,12 @@ def connection() -> psycopg2.connect:
     if port is None:
         port = PostGresTable.DEFAULT_PORT
 
-    connector = partial(psycopg2.connect, database=CREDENTIALS['database']['database'], user=CREDENTIALS['database']['username'],
-                        password=CREDENTIALS['database']['password'])
+    connector = partial(
+        psycopg2.connect,
+        database=CREDENTIALS['database']['database'],
+        user=CREDENTIALS['database']['username'],
+        password=CREDENTIALS['database']['password'],
+    )
     if tunnel := TUNNEL is not None:
         try:
             tunnel.start()
@@ -176,10 +186,7 @@ def test_compound_primary_key(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        name=table_name,
-        fields=fields,
-        primary_key=primary_key,
-        **CREDENTIALS['database'],
+        name=table_name, fields=fields, primary_key=primary_key, **CREDENTIALS['database']
     )
 
     test_primary_key = primary_key
@@ -288,9 +295,7 @@ def test_table_flexibility(connection):
 
     incomplete_fields = {'primary_key_field': int, 'field_3': str}
 
-    records = [
-        {'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1'}
-    ]
+    records = [{'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1'}]
 
     with connection:
         with connection.cursor() as cursor:
@@ -470,9 +475,7 @@ def test_field_reorder(connection):
         'field_3': str,
     }
 
-    records = [
-        {'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1'}
-    ]
+    records = [{'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1'}]
 
     with connection:
         with connection.cursor() as cursor:
@@ -612,9 +615,7 @@ def test_records_intersecting_polygon(connection):
     test_query_1 = table.records_intersecting(inside_polygon)
     test_query_2 = table.records_intersecting(containing_polygon)
     test_query_3 = table.records_intersecting(inside_polygon, geometry_fields=['field_2'])
-    test_query_4 = table.records_intersecting(
-        containing_polygon, geometry_fields=['field_2']
-    )
+    test_query_4 = table.records_intersecting(containing_polygon, geometry_fields=['field_2'])
     test_query_5 = table.records_intersecting(
         projected_containing_polygon, crs=CRS.from_epsg(32618), geometry_fields=['field_2']
     )
