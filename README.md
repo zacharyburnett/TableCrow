@@ -1,4 +1,4 @@
-# TableCrow 
+# TableCrow
 
 [![tests](https://github.com/zacharyburnett/TableCrow/workflows/tests/badge.svg)](https://github.com/zacharyburnett/TableCrow/actions?query=workflow%3Atests)
 [![build](https://github.com/zacharyburnett/TableCrow/workflows/build/badge.svg)](https://github.com/zacharyburnett/TableCrow/actions?query=workflow%3Abuild)
@@ -6,22 +6,26 @@
 [![license](https://img.shields.io/github/license/zacharyburnett/tablecrow)](https://opensource.org/licenses/MIT)
 [![style](https://sourceforge.net/p/oitnb/code/ci/default/tree/_doc/_static/oitnb.svg?format=raw)](https://sourceforge.net/p/oitnb/code)
 
-`tablecrow` is an abstraction library over a generalized database table.
-Currently, `tablecrow` offers an abstraction for PostGreSQL tables with simple PostGIS operations. 
+`tablecrow` is an abstraction library over a generalized database table. Currently, `tablecrow` offers an abstraction for PostGreSQL tables with
+simple PostGIS operations.
+
 ```bash
 pip install tablecrow
 ```
 
 ## Data Model
-`tablecrow` sees a database schema as a mapping of field names to Python types, 
-and a database record / row as a mapping of field names to values:
+
+`tablecrow` sees a database schema as a mapping of field names to Python types, and a database record / row as a mapping of field names to values:
+
 ```python
 from datetime import datetime
 
 fields = {'id': int, 'time': datetime, 'length': float, 'name': str}
 record = {'id': 1, 'time': datetime(2020, 1, 1), 'length': 4.4, 'name': 'long boi'}
 ```
+
 For databases with a spatial extension, you can use [Shapely geometries](https://shapely.readthedocs.io/en/stable/manual.html#geometric-objects):
+
 ```python
 from shapely.geometry import Polygon
 
@@ -30,7 +34,9 @@ record = {'id': 1, 'polygon': Polygon([(-77.1, 39.65), (-77.1, 39.725), (-77.4, 
 ```
 
 ## Usage
+
 #### create a simple table (single primary key, no geometries)
+
 ```python
 from datetime import datetime
 from tablecrow import PostGresTable
@@ -72,7 +78,9 @@ records = table.records_where("length > 2 OR name ILIKE '%short%'")
 # delete records with a query
 table.delete_where({'name': None})
 ```
+
 #### create a table with multiple primary key fields
+
 ```python
 from datetime import datetime
 from tablecrow import PostGresTable
@@ -93,15 +101,18 @@ table.insert([
     {'id': 1, 'time': datetime(2020, 1, 1), 'length': 3, 'name': 'short boi'},
     {'id': 3, 'time': datetime(2020, 1, 3), 'length': 2, 'name': 'short boi'},
     {'id': 3, 'time': datetime(2020, 1, 3), 'length': 6, 'name': 'long boi'},
-    {'id': 2, 'name':'short boi'},
+    {'id': 2, 'name': 'short boi'},
 ])
 
 # key accessors must include entire primary key
 table[4, 'long'] = {'time': datetime(2020, 1, 4), 'length': 5}
 record = table[3, 'long boi']
 ```
+
 #### create a table with geometry fields
+
 the database must have a spatial extension (such as PostGIS) installed
+
 ```python
 from pyproj import CRS
 from shapely.geometry import MultiPolygon, Polygon, box
@@ -147,28 +158,32 @@ records = table.records_intersecting(
 ```
 
 ## Extending
+
 to write your own custom table interface, extend `DatabaseTable`:
+
 ```python
 from typing import Any, Mapping, Sequence, Union
 from tablecrow.table import DatabaseTable
 
+
 class CustomDatabaseTable(DatabaseTable):
     # mapping from Python types to database types
     FIELD_TYPES = {
-        'NoneType': '',
-        'bool': '',
-        'float': '',
-        'int': '',
-        'str': '',
-        'bytes': '',
-        'date': '',
-        'time': '',
-        'datetime': '',
-        'timedelta': '',
+        'NoneType': 'NotImplemented',
+        'bool': 'NotImplemented',
+        'float': 'NotImplemented',
+        'int': 'NotImplemented',
+        'str': 'NotImplemented',
+        'bytes': 'NotImplemented',
+        'date': 'NotImplemented',
+        'time': 'NotImplemented',
+        'datetime': 'NotImplemented',
+        'timedelta': 'NotImplemented',
     }
 
-    def __init__(self, hostname: str, database: str, name: str, fields: {str: type}):
-        super().__init__(hostname, database, name, fields)
+    def __init__(self, database: str, name: str, fields: {str: type}, primary_key: Union[str, Sequence[str]] = None, hostname: str = None,
+                 username: str = None, password: str = None, users: [str] = None):
+        super().__init__(database, name, fields, primary_key, hostname, username, password, users)
         raise NotImplementedError('implement database connection and table creation here')
 
     @property
@@ -197,4 +212,7 @@ class CustomDatabaseTable(DatabaseTable):
 ```
 
 ## Acknowledgements
-The original core code and methodology of `tablecrow` was developed for the National Bathymetric Source project under the [Office of Coast Survey of the National Oceanic and Atmospheric Administration (NOAA)](https://nauticalcharts.noaa.gov), a part of the United States Department of Commerce.
+
+The original core code and methodology of `tablecrow` was developed for the National Bathymetric Source project under
+the [Office of Coast Survey of the National Oceanic and Atmospheric Administration (NOAA)](https://nauticalcharts.noaa.gov), a part of the United
+States Department of Commerce.

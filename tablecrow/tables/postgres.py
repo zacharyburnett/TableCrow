@@ -46,23 +46,31 @@ class PostGresTable(DatabaseTable):
     }
 
     def __init__(
-            self,
-            hostname: str,
-            database: str,
-            name: str,
-            fields: {str: type},
-            primary_key: Union[str, Sequence[str]] = None,
-            crs: CRS = None,
-            username: str = None,
-            password: str = None,
-            users: [str] = None,
-            logger: Logger = None,
-            **kwargs,
+        self,
+        database: str,
+        name: str,
+        fields: {str: type},
+        primary_key: Union[str, Sequence[str]] = None,
+        crs: CRS = None,
+        hostname: str = None,
+        username: str = None,
+        password: str = None,
+        users: [str] = None,
+        logger: Logger = None,
+        **kwargs,
     ):
         super().__init__(
-            hostname, database, name, fields, primary_key, username, password, users, logger
+            database,
+            name,
+            fields,
+            primary_key,
+            crs,
+            hostname,
+            username,
+            password,
+            users,
+            logger,
         )
-        self.crs = crs if crs is not None else DEFAULT_CRS
 
         connector = partial(
             psycopg2.connect,
@@ -285,7 +293,7 @@ class PostGresTable(DatabaseTable):
                 return False
 
     def records_where(
-            self, where: Union[Mapping[str, Any], str, Sequence[str]]
+        self, where: Union[Mapping[str, Any], str, Sequence[str]]
     ) -> [{str: Any}]:
         if not self.connected:
             raise ConnectionError(
@@ -315,6 +323,39 @@ class PostGresTable(DatabaseTable):
         ]
 
         return matching_records
+
+    def records_intersecting(
+        self, geometry: BaseGeometry, crs: CRS = None, geometry_fields: [str] = None
+    ) -> [{str: Any}]:
+        if crs is None:
+            crs = self.crs
+
+        if crs.to_epsg() is None:
+            raise NotImplementedError(f'no EPSG code found for CRS "{crs}"')
+
+        if geometry_fields is None or len(geometry_fields) == 0:
+            geometry_fields = list(self.geometry_fields)
+
+        where_clause = []
+        where_values = []
+        for field in geometry_fields:
+            where_values.extend([geometry.wkt, crs.to_epsg()])
+            geometry_string = f'ST_GeomFromText(%s, %s)'
+            if crs != self.crs:
+                geometry_string = f'ST_Transform({geometry_string}, %s)'
+                where_values.append(self.crs.to_epsg())
+            where_clause.append(f'ST_Intersects({field}, {geometry_string})')
+        where_clause = ' OR '.join(where_clause)
+
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause}', where_values)
+                records = cursor.fetchall()
+
+        return [
+            parse_record_values(dict(zip(self.fields.keys(), record)), self.fields)
+            for record in records
+        ]
 
     def insert(self, records: [{str: Any}]):
         if isinstance(records, dict):
@@ -442,48 +483,6 @@ class PostGresTable(DatabaseTable):
                 cursor.execute(f'SELECT COUNT(*) FROM {self.name};')
                 return cursor.fetchone()[0]
 
-    def records_intersecting(
-            self, geometry: BaseGeometry, crs: CRS = None, geometry_fields: [str] = None
-    ) -> [{str: Any}]:
-        """
-        records in the table that intersect the given geometry
-
-        :param geometry: Shapely geometry object
-        :param crs: coordinate reference system of input geometry
-        :param geometry_fields: geometry fields to query
-        :return: dictionaries of matching records
-        """
-
-        if crs is None:
-            crs = self.crs
-
-        if crs.to_epsg() is None:
-            raise NotImplementedError(f'no EPSG code found for CRS "{crs}"')
-
-        if geometry_fields is None or len(geometry_fields) == 0:
-            geometry_fields = list(self.geometry_fields)
-
-        where_clause = []
-        where_values = []
-        for field in geometry_fields:
-            where_values.extend([geometry.wkt, crs.to_epsg()])
-            geometry_string = f'ST_GeomFromText(%s, %s)'
-            if crs != self.crs:
-                geometry_string = f'ST_Transform({geometry_string}, %s)'
-                where_values.append(self.crs.to_epsg())
-            where_clause.append(f'ST_Intersects({field}, {geometry_string})')
-        where_clause = ' OR '.join(where_clause)
-
-        with self.connection:
-            with self.connection.cursor() as cursor:
-                cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause}', where_values)
-                records = cursor.fetchall()
-
-        return [
-            parse_record_values(dict(zip(self.fields.keys(), record)), self.fields)
-            for record in records
-        ]
-
     def delete_table(self):
         with self.connection:
             with self.connection.cursor() as cursor:
@@ -502,9 +501,9 @@ class PostGresTable(DatabaseTable):
 
     def __where_clause(self, where: {str: Union[Any, list]}) -> (str, [Any]):
         if (
-                where is not None
-                and not isinstance(where, Sequence)
-                and not isinstance(where, dict)
+            where is not None
+            and not isinstance(where, Sequence)
+            and not isinstance(where, dict)
         ):
             raise NotImplementedError(f'unsupported query type "{type(where)}"')
 
@@ -521,7 +520,7 @@ class PostGresTable(DatabaseTable):
                 for field, value in where.items():
                     field_type = self.fields[field]
                     if isinstance(value, BaseGeometry) or isinstance(
-                            value, BaseMultipartGeometry
+                        value, BaseMultipartGeometry
                     ):
                         where_clause.append(f'{field} = ST_GeomFromText(%s, %s)')
                         where_values.extend([value.wkt, self.crs.to_epsg()])
