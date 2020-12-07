@@ -3,7 +3,6 @@ from ast import literal_eval
 from datetime import date, datetime
 import logging
 from logging import Logger
-import re
 import socket
 from typing import Any, Generator, Mapping, Sequence, Union
 
@@ -326,9 +325,8 @@ class DatabaseTable(ABC):
 
     def __repr__(self) -> str:
         return (
-            f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.name)}, '
-            f'{repr(self.fields)}, {repr(self.primary_key)}, '
-            f'{repr(self.username)}, {repr(re.sub(".", "*", self.password))}, {repr(self.users)})'
+            f'{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, {repr(self.fields)}, {repr(self.primary_key)}, '
+            f'{repr(self.hostname)}, {repr(self.username)}, {repr("*" * len(self.password))}, {repr(self.users)})'
         )
 
 

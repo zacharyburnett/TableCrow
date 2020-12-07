@@ -1,10 +1,8 @@
 from datetime import date, datetime
 from functools import partial
 from logging import Logger
-import re
 from typing import (
     Any,
-    Collection,
     Mapping,
     Sequence,
     Union,
@@ -193,8 +191,7 @@ class PostGresTable(DatabaseTable):
                             copy_table_fields = [record[0] for record in cursor.fetchall()]
 
                             cursor.execute(
-                                f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) '
-                                f'SELECT * FROM {copy_table_name};'
+                                f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) SELECT * FROM {copy_table_name};'
                             )
 
                             cursor.execute(f'DROP TABLE {copy_table_name};')
@@ -215,11 +212,11 @@ class PostGresTable(DatabaseTable):
 
     @property
     def schema(self) -> str:
-        """ PostGreSQL schema string """
+        """ PostGres schema string """
 
         schema = []
         for field, field_type in self.fields.items():
-            if field_type in [list, tuple, Sequence, Collection]:
+            if isinstance(field_type, Sequence) and not isinstance(field_type, str):
                 field_type = [typing_get_args(field_type)[0]]
             dimensions = 0
             while isinstance(field_type, Sequence) and not isinstance(field_type, str):
@@ -231,9 +228,12 @@ class PostGresTable(DatabaseTable):
             if isinstance(field_type, Mapping):
                 field_type = dict
 
-            schema.append(
-                f'{field} {self.FIELD_TYPES[field_type.__name__]}{"[]" * dimensions}'
-            )
+            try:
+                field_type = self.FIELD_TYPES[field_type.__name__]
+            except KeyError:
+                raise TypeError(f'PostGres does not support type "{field_type}"')
+
+            schema.append(f'{field} {field_type}{"[]" * dimensions}')
 
         schema.append(f'PRIMARY KEY({", ".join(self.primary_key)})')
 
@@ -279,8 +279,10 @@ class PostGresTable(DatabaseTable):
                         for _ in range(dimensions):
                             field_type = [field_type]
                         fields[field] = field_type
+                else:
+                    fields = None
 
-                    return fields
+                return fields
 
     @property
     def connected(self) -> bool:
@@ -288,8 +290,9 @@ class PostGresTable(DatabaseTable):
             try:
                 with self.connection.cursor() as cursor:
                     cursor.execute('SELECT 1;')
+                    cursor.fetchone()
                 return True
-            except psycopg2.OperationalError:
+            except:
                 return False
 
     def records_where(
@@ -490,9 +493,9 @@ class PostGresTable(DatabaseTable):
 
     def __repr__(self) -> str:
         return (
-            f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.name)}, '
-            f'{repr(self.fields)}, {repr(self.primary_key)}, {repr(self.crs.to_epsg())}, '
-            f'{repr(self.username)}, {repr(re.sub("..", "*", self.password))}, {repr(self.users)})'
+            f'{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, {repr(self.fields)}, {repr(self.primary_key)}, '
+            f'{repr(self.hostname)}, {repr(self.crs.to_epsg()) if self.crs is not None else None}, '
+            f'{repr(self.username)}, {repr("*" * len(self.password))}, {repr(self.users)})'
         )
 
     def __del__(self):

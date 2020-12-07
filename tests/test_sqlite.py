@@ -1,17 +1,13 @@
 from datetime import datetime
-from functools import partial
 import os
+import sqlite3
 
-import psycopg2
 from pyproj import CRS
 import pytest
 from shapely.geometry import MultiPolygon, Point, box
-from sshtunnel import SSHTunnelForwarder
 
-from tablecrow import PostGresTable
-from tablecrow.table import random_open_tcp_port, split_URL_port
-from tablecrow.tables.postgres import (
-    SSH_DEFAULT_PORT,
+from tablecrow import SQLiteTable
+from tablecrow.tables.sqlite import (
     database_has_table,
     database_table_fields,
 )
@@ -20,129 +16,70 @@ from tablecrow.utilities import read_configuration, repository_root
 CREDENTIALS_FILENAME = repository_root() / 'credentials.config'
 CREDENTIALS = read_configuration(CREDENTIALS_FILENAME)
 
-if 'postgres' not in CREDENTIALS:
-    CREDENTIALS['postgres'] = {}
+if 'sqlite' not in CREDENTIALS:
+    CREDENTIALS['sqlite'] = {}
 
 default_credentials = {
-    'hostname': ('POSTGRES_HOSTNAME', 'localhost'),
-    'database': ('POSTGRES_DATABASE', 'postgres'),
-    'username': ('POSTGRES_USERNAME', 'postgres'),
-    'password': ('POSTGRES_PASSWORD', ''),
-    'ssh_hostname': ('SSH_HOSTNAME', None),
-    'ssh_username': ('SSH_USERNAME', None),
-    'ssh_password': ('SSH_PASSWORD', None),
+    'database': ('SQLITE_DATABASE', 'test_database.db'),
 }
 
 for credential, details in default_credentials.items():
-    if credential not in CREDENTIALS['postgres']:
-        CREDENTIALS['postgres'][credential] = os.getenv(*details)
-
-if (
-    'ssh_hostname' in CREDENTIALS['postgres']
-    and CREDENTIALS['postgres']['ssh_hostname'] is not None
-):
-    hostname, port = split_URL_port(CREDENTIALS['postgres']['hostname'])
-    if port is None:
-        port = PostGresTable.DEFAULT_PORT
-
-    ssh_hostname, ssh_port = split_URL_port(CREDENTIALS['postgres']['ssh_hostname'])
-    if ssh_port is None:
-        ssh_port = SSH_DEFAULT_PORT
-
-    if '@' in ssh_hostname:
-        ssh_username, ssh_hostname = ssh_hostname.split('@', 1)
-
-    ssh_username = CREDENTIALS['postgres']['ssh_username']
-
-    if ssh_username is not None and ':' in ssh_username:
-        ssh_username, ssh_password = ssh_hostname.split(':', 1)
-
-    ssh_password = CREDENTIALS['postgres']['ssh_password']
-
-    TUNNEL = SSHTunnelForwarder(
-        (ssh_hostname, ssh_port),
-        ssh_username=ssh_username,
-        ssh_password=ssh_password,
-        remote_bind_address=('localhost', port),
-        local_bind_address=('localhost', random_open_tcp_port()),
-    )
-    TUNNEL.start()
-else:
-    TUNNEL = None
+    if credential not in CREDENTIALS['sqlite']:
+        CREDENTIALS['sqlite'][credential] = os.getenv(*details)
 
 
-@pytest.fixture
-def connection() -> psycopg2.connect:
-    hostname, port = split_URL_port(CREDENTIALS['postgres']['hostname'])
-    if port is None:
-        port = PostGresTable.DEFAULT_PORT
-
-    connector = partial(
-        psycopg2.connect,
-        database=CREDENTIALS['postgres']['database'],
-        user=CREDENTIALS['postgres']['username'],
-        password=CREDENTIALS['postgres']['password'],
-    )
-    if tunnel := TUNNEL is not None:
-        try:
-            tunnel.start()
-        except Exception as error:
-            raise ConnectionError(error)
-        connection = connector(host=tunnel.local_bind_host, port=tunnel.local_bind_port)
-    else:
-        connection = connector(host=hostname, port=port)
-
-    return connection
+def sqlite_connection() -> sqlite3.Connection:
+    return sqlite3.connect(CREDENTIALS['sqlite']['database'])
 
 
-def test_table_creation(connection):
+def test_table_creation():
     table_name = 'test_table_creation'
 
     fields = {
         'primary_key_field': int,
-        'field_1': datetime,
+        'field_1': str,
         'field_2': float,
         'field_3': str,
-        'field_4': [str],
+        'field_4': str,
         'field_5': Point,
         'field_6': MultiPolygon,
     }
 
-    with connection:
-        with connection.cursor() as cursor:
-            if database_has_table(cursor, table_name):
-                cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        if database_has_table(cursor, table_name):
+            cursor.execute(f'DROP TABLE {table_name};')
 
-    table = PostGresTable(
+    table = SQLiteTable(
         name=table_name,
         fields=fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **CREDENTIALS['sqlite'],
     )
 
     test_remote_fields = table.remote_fields
 
-    with connection:
-        with connection.cursor() as cursor:
-            test_raw_remote_fields = database_table_fields(cursor, table_name)
-            if table.exists:
-                table.delete_table()
-                table_exists = database_has_table(cursor, table_name)
-                if table_exists:
-                    cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        test_raw_remote_fields = database_table_fields(cursor, table_name)
+        if table.exists:
+            table.delete_table()
+            table_exists = database_has_table(cursor, table_name)
+            if table_exists:
+                cursor.execute(f'DROP TABLE {table_name};')
 
     assert test_remote_fields == fields
     assert list(test_raw_remote_fields) == list(fields)
     assert not table_exists
 
 
-def test_compound_primary_key(connection):
+def test_compound_primary_key():
     table_name = 'test_compound_primary_key'
 
     fields = {
         'primary_key_field_1': int,
         'primary_key_field_2': str,
-        'primary_key_field_3': datetime,
+        'primary_key_field_3': str,
         'field_1': float,
         'field_2': str,
     }
@@ -180,13 +117,13 @@ def test_compound_primary_key(connection):
 
     primary_key = ('primary_key_field_1', 'primary_key_field_2', 'primary_key_field_3')
 
-    with connection:
-        with connection.cursor() as cursor:
-            if database_has_table(cursor, table_name):
-                cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        if database_has_table(cursor, table_name):
+            cursor.execute(f'DROP TABLE {table_name};')
 
-    table = PostGresTable(
-        name=table_name, fields=fields, primary_key=primary_key, **CREDENTIALS['postgres']
+    table = SQLiteTable(
+        name=table_name, fields=fields, primary_key=primary_key, **CREDENTIALS['sqlite']
     )
 
     test_primary_key = primary_key
@@ -202,11 +139,14 @@ def test_compound_primary_key(connection):
     test_record = table[1, 'test 1', datetime(2020, 1, 1)]
     test_records = table.records
 
-    with connection:
-        with connection.cursor() as cursor:
-            test_raw_remote_fields = database_table_fields(cursor, table_name)
-            if database_has_table(cursor, table_name):
-                cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        test_raw_remote_fields = database_table_fields(cursor, table_name)
+        if database_has_table(cursor, table_name):
+            cursor.execute(f'DROP TABLE {table_name};')
+
+    for record in records + [extra_record]:
+        record['primary_key_field_3'] = f'{record["primary_key_field_3"]}'
 
     assert test_primary_key == primary_key
     assert test_records == records + [extra_record]
@@ -214,12 +154,12 @@ def test_compound_primary_key(connection):
     assert list(test_raw_remote_fields) == list(fields)
 
 
-def test_record_insertion(connection):
+def test_record_insertion():
     table_name = 'test_record_insertion'
 
     fields = {
         'primary_key_field': int,
-        'field_1': datetime,
+        'field_1': str,
         'field_2': float,
         'field_3': str,
     }
@@ -236,16 +176,16 @@ def test_record_insertion(connection):
         'field_3': 'test 3',
     }
 
-    with connection:
-        with connection.cursor() as cursor:
-            if database_has_table(cursor, table_name):
-                cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        if database_has_table(cursor, table_name):
+            cursor.execute(f'DROP TABLE {table_name};')
 
-    table = PostGresTable(
+    table = SQLiteTable(
         name=table_name,
         fields=fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **CREDENTIALS['sqlite'],
     )
     table.insert(records)
     test_records_before_addition = table.records
@@ -274,21 +214,24 @@ def test_record_insertion(connection):
 
     table.insert(records[0])
 
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        cursor.execute(f'DROP TABLE {table_name};')
+
+    for record in records + [extra_record]:
+        record['field_1'] = f'{record["field_1"]}'
 
     assert test_records_before_addition == records
     assert test_records_after_addition == records + [extra_record]
     assert test_records_after_deletion == records
 
 
-def test_table_flexibility(connection):
+def test_table_flexibility():
     table_name = 'test_table_flexibility'
 
     fields = {
         'primary_key_field': int,
-        'field_1': datetime,
+        'field_1': str,
         'field_2': float,
         'field_3': str,
     }
@@ -297,51 +240,51 @@ def test_table_flexibility(connection):
 
     records = [{'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1'}]
 
-    with connection:
-        with connection.cursor() as cursor:
-            if database_has_table(cursor, table_name):
-                cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        if database_has_table(cursor, table_name):
+            cursor.execute(f'DROP TABLE {table_name};')
 
     # create table with incomplete fields
-    incomplete_table = PostGresTable(
+    incomplete_table = SQLiteTable(
         name=table_name,
         fields=incomplete_fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **CREDENTIALS['sqlite'],
     )
     incomplete_table.insert(records)
     incomplete_records = incomplete_table.records
 
-    with connection:
-        with connection.cursor() as cursor:
-            test_incomplete_remote_fields = database_table_fields(cursor, table_name)
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        test_incomplete_remote_fields = database_table_fields(cursor, table_name)
 
     # create table with complete fields, pointing to existing remote table with incomplete fields
-    complete_table = PostGresTable(
+    complete_table = SQLiteTable(
         name=table_name,
         fields=fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **CREDENTIALS['sqlite'],
     )
     complete_records = complete_table.records
 
-    with connection:
-        with connection.cursor() as cursor:
-            test_complete_remote_fields = database_table_fields(cursor, table_name)
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        test_complete_remote_fields = database_table_fields(cursor, table_name)
 
     # create table with incomplete fields, pointing to existing remote table with complete fields
-    completed_table = PostGresTable(
+    completed_table = SQLiteTable(
         name=table_name,
         fields=incomplete_fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **CREDENTIALS['sqlite'],
     )
     completed_records = completed_table.records
 
-    with connection:
-        with connection.cursor() as cursor:
-            test_completed_remote_fields = database_table_fields(cursor, table_name)
-            cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        test_completed_remote_fields = database_table_fields(cursor, table_name)
+        cursor.execute(f'DROP TABLE {table_name};')
 
     assert list(test_complete_remote_fields) == list(fields)
     assert list(test_completed_remote_fields) == list(fields)
@@ -353,53 +296,10 @@ def test_table_flexibility(connection):
                 assert value == record[field]
 
 
-def test_list_type(connection):
-    table_name = 'test_list_type'
-
-    fields = {'primary_key_field': int, 'field_1': [str], 'field_2': tuple([str])}
-
-    records = [
-        {'primary_key_field': 1, 'field_1': ['test 1', 'test 2']},
-        {'primary_key_field': 2, 'field_1': ['test 3', 'test 1']},
-        {'primary_key_field': 3, 'field_2': ['test 1', 'test 2']},
-    ]
-
-    with connection:
-        with connection.cursor() as cursor:
-            if database_has_table(cursor, table_name):
-                cursor.execute(f'DROP TABLE {table_name};')
-
-    table = PostGresTable(
-        name=table_name,
-        fields=fields,
-        primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
-    )
-
-    table.insert(records)
-
-    test_records = table.records
-
-    test_record_query_1 = table.records_where("'test 1' = ANY(field_1)")
-    test_record_query_2 = table.records_where({'field_1': 'test 1'})
-
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(f'DROP TABLE {table_name};')
-
-    records[0]['field_2'] = None
-    records[1]['field_2'] = None
-    records[2]['field_1'] = None
-
-    assert test_records == records
-    assert test_record_query_1 == records[:2]
-    assert test_record_query_2 == records[:2]
-
-
-def test_records_where(connection):
+def test_records_where():
     table_name = 'test_records_where'
 
-    fields = {'primary_key_field': int, 'field_1': datetime, 'field_2': str}
+    fields = {'primary_key_field': int, 'field_1': str, 'field_2': str}
 
     records = [
         {'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_2': 'test 1'},
@@ -408,16 +308,16 @@ def test_records_where(connection):
         {'primary_key_field': 4, 'field_1': datetime(2020, 1, 4), 'field_2': None},
     ]
 
-    with connection:
-        with connection.cursor() as cursor:
-            if database_has_table(cursor, table_name):
-                cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        if database_has_table(cursor, table_name):
+            cursor.execute(f'DROP TABLE {table_name};')
 
-    table = PostGresTable(
+    table = SQLiteTable(
         name=table_name,
         fields=fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **CREDENTIALS['sqlite'],
     )
 
     table.insert(records)
@@ -426,16 +326,16 @@ def test_records_where(connection):
     test_record_query_2 = table.records_where({'field_2': ['test 1', 'test 3']})
     test_record_query_3 = table.records_where({'primary_key_field': range(3)})
     test_record_query_4 = table.records_where({'field_2': 'test%'})
-    test_record_query_5 = table.records_where("field_1 = '2020-01-02'")
+    test_record_query_5 = table.records_where("field_1 = '2020-01-02 00:00:00'")
     test_record_query_6 = table.records_where(
-        ["field_1 = '2020-01-02'", "field_2 IN ('test 1', 'test 2')"]
+        ["field_1 = '2020-01-02 00:00:00'", "field_2 IN ('test 1', 'test 2')"]
     )
     test_record_query_7 = table.records_where({'field_2': None})
 
-    with pytest.raises(KeyError):
+    with pytest.raises(sqlite3.OperationalError):
         table.records_where('nonexistent_field = 4')
 
-    with pytest.raises(SyntaxError):
+    with pytest.raises(sqlite3.OperationalError):
         table.records_where('bad_ syn = tax')
 
     with pytest.raises(NotImplementedError):
@@ -444,9 +344,12 @@ def test_records_where(connection):
     table.delete_where({'field_1': datetime(2020, 1, 1)})
     test_records_after_deletion = table.records
 
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        cursor.execute(f'DROP TABLE {table_name};')
+
+    for record in records:
+        record['field_1'] = f'{record["field_1"]}'
 
     assert test_record_query_1 == [records[0]]
     assert test_record_query_2 == [records[0], records[2]]
@@ -458,12 +361,12 @@ def test_records_where(connection):
     assert test_records_after_deletion == records[1:]
 
 
-def test_field_reorder(connection):
+def test_field_reorder():
     table_name = 'test_field_reorder'
 
     fields = {
         'primary_key_field': int,
-        'field_1': datetime,
+        'field_1': str,
         'field_2': float,
         'field_3': str,
     }
@@ -471,45 +374,48 @@ def test_field_reorder(connection):
     reordered_fields = {
         'field_2': float,
         'primary_key_field': int,
-        'field_1': datetime,
+        'field_1': str,
         'field_3': str,
     }
 
     records = [{'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1'}]
 
-    with connection:
-        with connection.cursor() as cursor:
-            if database_has_table(cursor, table_name):
-                cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        if database_has_table(cursor, table_name):
+            cursor.execute(f'DROP TABLE {table_name};')
 
-    table = PostGresTable(
+    table = SQLiteTable(
         name=table_name,
         fields=fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **CREDENTIALS['sqlite'],
     )
     table.insert(records)
     test_records = table.records
 
-    with connection:
-        with connection.cursor() as cursor:
-            test_fields = database_table_fields(cursor, table_name)
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        test_fields = database_table_fields(cursor, table_name)
 
-    reordered_table = PostGresTable(
+    reordered_table = SQLiteTable(
         name=table_name,
         fields=reordered_fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **CREDENTIALS['sqlite'],
     )
     test_reordered_records = reordered_table.records
 
-    with connection:
-        with connection.cursor() as cursor:
-            test_reordered_fields = database_table_fields(cursor, table_name)
-            cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        test_reordered_fields = database_table_fields(cursor, table_name)
+        cursor.execute(f'DROP TABLE {table_name};')
 
     assert list(test_fields) == list(fields)
     assert list(test_reordered_fields) == list(reordered_fields)
+
+    for record in records:
+        record['field_1'] = f'{record["field_1"]}'
 
     for test_records in (test_records, test_reordered_records):
         for record_index, record in enumerate(records):
@@ -518,12 +424,12 @@ def test_field_reorder(connection):
                 assert test_record[field] == value
 
 
-def test_nonexistent_field_in_inserted_record(connection):
+def test_nonexistent_field_in_inserted_record():
     table_name = 'test_nonexistent_field_in_inserted_record'
 
     fields = {
         'primary_key_field': int,
-        'field_1': datetime,
+        'field_1': str,
         'field_2': float,
         'field_3': str,
     }
@@ -534,32 +440,33 @@ def test_nonexistent_field_in_inserted_record(connection):
         'nonexistent_field': 'test',
     }
 
-    with connection:
-        with connection.cursor() as cursor:
-            if database_has_table(cursor, table_name):
-                cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        if database_has_table(cursor, table_name):
+            cursor.execute(f'DROP TABLE {table_name};')
 
-    table = PostGresTable(
+    table = SQLiteTable(
         name=table_name,
         fields=fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **CREDENTIALS['sqlite'],
     )
     table[record_with_extra_field['primary_key_field']] = record_with_extra_field
     test_records = table.records
 
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        cursor.execute(f'DROP TABLE {table_name};')
 
     del record_with_extra_field['nonexistent_field']
+    record_with_extra_field['field_1'] = f'{record_with_extra_field["field_1"]}'
     record_with_extra_field['field_2'] = None
     record_with_extra_field['field_3'] = None
 
     assert test_records == [record_with_extra_field]
 
 
-def test_records_intersecting_polygon(connection):
+def test_records_intersecting_polygon():
     table_name = 'test_records_intersecting_polygon'
 
     fields = {
@@ -599,17 +506,17 @@ def test_records_intersecting_polygon(connection):
         },
     ]
 
-    with connection:
-        with connection.cursor() as cursor:
-            if database_has_table(cursor, table_name):
-                cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        if database_has_table(cursor, table_name):
+            cursor.execute(f'DROP TABLE {table_name};')
 
-    table = PostGresTable(
+    table = SQLiteTable(
         name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         crs=crs,
-        **CREDENTIALS['postgres'],
+        **CREDENTIALS['sqlite'],
     )
     table.insert(records)
 
@@ -621,9 +528,9 @@ def test_records_intersecting_polygon(connection):
         projected_containing_polygon, crs=CRS.from_epsg(32618), geometry_fields=['field_2']
     )
 
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(f'DROP TABLE {table_name};')
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        cursor.execute(f'DROP TABLE {table_name};')
 
     assert test_query_1 == records
     assert test_query_2 == records
