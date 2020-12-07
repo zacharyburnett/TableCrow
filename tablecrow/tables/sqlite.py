@@ -222,7 +222,9 @@ class SQLiteTable(DatabaseTable):
             else:
                 try:
                     if where_values is not None:
-                        cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause}', where_values)
+                        cursor.execute(
+                            f'SELECT * FROM {self.name} WHERE {where_clause}', where_values
+                        )
                     else:
                         cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause}')
                 except sqlite3.OperationalError:
@@ -320,19 +322,21 @@ class SQLiteTable(DatabaseTable):
                         for column, value in zip(columns, values)
                         if column not in self.primary_key
                     }
-                    if not isinstance(primary_key_value, Sequence) or isinstance(primary_key_value, str):
+                    if not isinstance(primary_key_value, Sequence) or isinstance(
+                        primary_key_value, str
+                    ):
                         primary_key_value = [primary_key_value]
                     if len(record_without_primary_key) > 0:
                         cursor.execute(
                             f'UPDATE {self.name} SET ({", ".join(record_without_primary_key.keys())}) = ({", ".join("?" for _ in record_without_primary_key)})'
                             f' WHERE {primary_key_string} = ({", ".join("?" for _ in primary_key_value)});',
-                            [
-                                *record_without_primary_key.values(),
-                                *primary_key_value,
-                            ],
+                            [*record_without_primary_key.values(), *primary_key_value, ],
                         )
                 else:
-                    cursor.execute(f'INSERT INTO {self.name} ({", ".join(columns)}) VALUES ({", ".join("?" for _ in values)});', values)
+                    cursor.execute(
+                        f'INSERT INTO {self.name} ({", ".join(columns)}) VALUES ({", ".join("?" for _ in values)});',
+                        values,
+                    )
 
                 if len(geometry_fields) > 0:
                     self.connection.enable_load_extension(True)
@@ -340,7 +344,9 @@ class SQLiteTable(DatabaseTable):
                     try:
                         self.connection.execute('SELECT load_extension("mod_spatialite")')
                     except:
-                        raise EnvironmentError('SpatiaLite module was not found; you can download it from here: https://www.gaia-gis.it/gaia-sins/')
+                        raise EnvironmentError(
+                            'SpatiaLite module was not found; you can download it from here: https://www.gaia-gis.it/gaia-sins/'
+                        )
 
                     geometries = {
                         field: record[field]

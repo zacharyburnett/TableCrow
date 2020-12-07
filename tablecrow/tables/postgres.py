@@ -3,6 +3,7 @@ from functools import partial
 from logging import Logger
 from typing import (
     Any,
+    Collection,
     Mapping,
     Sequence,
     Union,
@@ -216,8 +217,8 @@ class PostGresTable(DatabaseTable):
 
         schema = []
         for field, field_type in self.fields.items():
-            if isinstance(field_type, Sequence) and not isinstance(field_type, str):
-                field_type = [typing_get_args(field_type)[0]]
+            if field_type in [list, tuple, Sequence, Collection]:
+                field_type = [typing_get_args(field_type[0])]
             dimensions = 0
             while isinstance(field_type, Sequence) and not isinstance(field_type, str):
                 if len(field_type) > 0:
