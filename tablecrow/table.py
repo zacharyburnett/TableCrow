@@ -1,15 +1,11 @@
 from abc import ABC, abstractmethod
-from ast import literal_eval
-from datetime import date, datetime
 import logging
 from logging import Logger
 import socket
 from typing import Any, Generator, Mapping, Sequence, Union
 
 from pyproj import CRS
-from shapely import wkb, wkt
-from shapely.errors import WKBReadingError, WKTReadingError
-from shapely.geometry import LinearRing, MultiPolygon, Polygon, shape as shapely_shape
+from shapely.geometry import LinearRing, MultiPolygon, Polygon
 from shapely.geometry.base import BaseGeometry, GEOMETRY_TYPES
 
 
@@ -328,55 +324,6 @@ class DatabaseTable(ABC):
             f'{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, {repr(self.fields)}, {repr(self.primary_key)}, '
             f'{repr(self.hostname)}, {repr(self.username)}, {repr("*" * len(self.password))}, {repr(self.users)})'
         )
-
-
-def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: Any}:
-    """
-    Parse the values in the given record into their respective field types.
-
-    :param record: dictionary mapping fields to values
-    :param field_types: dictionary mapping fields to types
-    :return: record with values parsed into their respective types
-    """
-
-    for field, value in record.items():
-        if field in field_types:
-            field_type = field_types[field]
-            value_type = type(value)
-
-            if value_type is not field_type and value is not None:
-                if field_type is bool:
-                    value = (
-                        bool(value)
-                        if value_type is not str
-                        else literal_eval(value.capitalize())
-                    )
-                elif field_type is int:
-                    value = int(value)
-                elif field_type is float:
-                    value = float(value)
-                elif field_type is str:
-                    value = str(value)
-                elif value_type is str:
-                    if field_type is list:
-                        value = literal_eval(value)
-                    elif field_type in (date, datetime):
-                        value = datetime.strptime(value, '%Y%m%d')
-                        if field_type is date:
-                            value = value.date()
-                    elif field_type.__name__ in GEOMETRY_TYPES:
-                        try:
-                            value = wkb.loads(value, hex=True)
-                        except WKBReadingError:
-                            try:
-                                value = wkt.loads(value)
-                            except WKTReadingError:
-                                try:
-                                    value = wkb.loads(value)
-                                except TypeError:
-                                    value = shapely_shape(literal_eval(value))
-                record[field] = value
-    return record
 
 
 def random_open_tcp_port() -> int:

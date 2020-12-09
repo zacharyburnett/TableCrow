@@ -1,3 +1,4 @@
+from ast import literal_eval
 from datetime import date, datetime
 from logging import Logger
 import sqlite3
@@ -10,11 +11,12 @@ from typing import (
 )
 
 from pyproj import CRS
+from shapely import wkb, wkt
+from shapely.geometry import shape as shapely_shape
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 
 from ..table import (
     DatabaseTable,
-    parse_record_values,
 )
 
 DEFAULT_CRS = CRS.from_epsg(4326)
@@ -57,6 +59,18 @@ class SQLiteTable(DatabaseTable):
 
         if not self.connected:
             raise ConnectionError(f'no connection to {self.database}/{self.name}')
+
+        if len(self.geometry_fields) > 0:
+            self.connection.enable_load_extension(True)
+
+            try:
+                self.connection.execute('SELECT load_extension("mod_spatialite")')
+            except:
+                raise EnvironmentError(
+                    'SpatiaLite module was not found; '
+                    'download the module from [Gaia GIS](http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/spatialite-loadable-modules-5.0.0-win-amd64.7z) '
+                    'and place `mod_spatialite.dll` / `mod_spatialite.so` in your `PATH`'
+                )
 
         with self.connection:
             cursor = self.connection.cursor()
@@ -261,15 +275,26 @@ class SQLiteTable(DatabaseTable):
             where_clause.append(f'Intersects({field}, {geometry_string})')
         where_clause = ' OR '.join(where_clause)
 
+        non_geometry_fields = {field: field_type for field, field_type in self.fields.items()
+                               if field_type.__name__ not in GEOMETRY_TYPES}
+
         with self.connection:
             cursor = self.connection.cursor()
-            cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause}', where_values)
-            records = cursor.fetchall()
+            cursor.execute(f'SELECT {", ".join(non_geometry_fields)} '
+                           f'FROM {self.name} WHERE {where_clause};', where_values)
+            non_geometry_records = cursor.fetchall()
+            non_geometry_records = [parse_record_values(dict(zip(non_geometry_fields.keys(), record)), non_geometry_fields) for record in
+                                    non_geometry_records]
 
-        return [
-            parse_record_values(dict(zip(self.fields.keys(), record)), self.fields)
-            for record in records
-        ]
+            geometry_field_string = ", ".join(f'asbinary({geometry_field})' for geometry_field in self.geometry_fields)
+            cursor.execute(f'SELECT {geometry_field_string} '
+                           f'FROM {self.name} WHERE {where_clause};', where_values)
+            geometry_records = cursor.fetchall()
+            geometry_records = [parse_record_values(dict(zip(self.geometry_fields.keys(), record)), self.geometry_fields)
+                                for record in geometry_records]
+
+        records = [{**non_geometry_records[index], **geometry_records[index]} for index in range(len(non_geometry_records))]
+        return [{field: record[field] for field in self.fields} for record in records]
 
     def insert(self, records: [{str: Any}]):
         if isinstance(records, dict):
@@ -327,11 +352,11 @@ class SQLiteTable(DatabaseTable):
                     ):
                         primary_key_value = [primary_key_value]
                     if len(record_without_primary_key) > 0:
-                        cursor.execute(
-                            f'UPDATE {self.name} SET ({", ".join(record_without_primary_key.keys())}) = ({", ".join("?" for _ in record_without_primary_key)})'
-                            f' WHERE {primary_key_string} = ({", ".join("?" for _ in primary_key_value)});',
-                            [*record_without_primary_key.values(), *primary_key_value, ],
-                        )
+                        cursor.execute(f'UPDATE {self.name} '
+                                       f'SET ({", ".join(record_without_primary_key.keys())}) = ({", ".join("?" for _ in record_without_primary_key)})'
+                                       f' WHERE {primary_key_string} = ({", ".join("?" for _ in primary_key_value)});',
+                                       [*record_without_primary_key.values(), *primary_key_value, ],
+                                       )
                 else:
                     cursor.execute(
                         f'INSERT INTO {self.name} ({", ".join(columns)}) VALUES ({", ".join("?" for _ in values)});',
@@ -339,15 +364,6 @@ class SQLiteTable(DatabaseTable):
                     )
 
                 if len(geometry_fields) > 0:
-                    self.connection.enable_load_extension(True)
-
-                    try:
-                        self.connection.execute('SELECT load_extension("mod_spatialite")')
-                    except:
-                        raise EnvironmentError(
-                            'SpatiaLite module was not found; you can download it from here: https://www.gaia-gis.it/gaia-sins/'
-                        )
-
                     geometries = {
                         field: record[field]
                         for field in geometry_fields
@@ -460,6 +476,51 @@ class SQLiteTable(DatabaseTable):
                 where_values = None
 
         return where_clause, where_values
+
+
+def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: Any}:
+    """
+    Parse the values in the given record into their respective field types.
+
+    :param record: dictionary mapping fields to values
+    :param field_types: dictionary mapping fields to types
+    :return: record with values parsed into their respective types
+    """
+
+    for field, value in record.items():
+        if field in field_types:
+            field_type = field_types[field]
+            value_type = type(value)
+
+            if value_type is not field_type and value is not None:
+                if field_type is bool:
+                    value = (
+                        bool(value)
+                        if value_type is not str
+                        else literal_eval(value.capitalize())
+                    )
+                elif field_type is int:
+                    value = int(value)
+                elif field_type is float:
+                    value = float(value)
+                elif field_type is str:
+                    value = str(value)
+                elif value_type in (str, bytes):
+                    if field_type is list:
+                        value = literal_eval(value)
+                    elif field_type.__name__ in GEOMETRY_TYPES:
+                        try:
+                            value = wkb.loads(value, hex=True)
+                        except:
+                            try:
+                                value = wkt.loads(value)
+                            except:
+                                try:
+                                    value = wkb.loads(value)
+                                except TypeError:
+                                    value = shapely_shape(literal_eval(value))
+                record[field] = value
+    return record
 
 
 def database_has_table(cursor: Cursor, table: str) -> bool:

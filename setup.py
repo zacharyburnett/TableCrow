@@ -24,6 +24,6 @@ setup(
     packages=find_packages(),
     python_requires='>=3.8',
     setup_requires=['dunamai', 'setuptools>=41.2'],
-    install_requires=['psycopg2-binary', 'pyproj', 'shapely', 'sshtunnel'],
+    install_requires=['psycopg2-binary', 'pyproj', 'shapely', 'spatialite', 'sshtunnel'],
     extras_require={'testing': ['flake8', 'pytest', 'pytest-cov'], 'development': ['oitnb']},
 )

@@ -1,3 +1,4 @@
+from ast import literal_eval
 from datetime import date, datetime
 from functools import partial
 from logging import Logger
@@ -12,12 +13,13 @@ from typing import (
 
 import psycopg2
 from pyproj import CRS
+from shapely import wkb, wkt
+from shapely.geometry import shape as shapely_shape
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry, GEOMETRY_TYPES
 from sshtunnel import SSHTunnelForwarder
 
 from ..table import (
     DatabaseTable,
-    parse_record_values,
     random_open_tcp_port,
     split_URL_port,
 )
@@ -309,11 +311,11 @@ class PostGresTable(DatabaseTable):
         with self.connection:
             with self.connection.cursor() as cursor:
                 if where_clause is None:
-                    cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.name}')
+                    cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.name};')
                 else:
                     try:
                         cursor.execute(
-                            f'SELECT * FROM {self.name} WHERE {where_clause}', where_values
+                            f'SELECT * FROM {self.name} WHERE {where_clause};', where_values
                         )
                     except psycopg2.errors.UndefinedColumn as error:
                         raise KeyError(error)
@@ -353,7 +355,7 @@ class PostGresTable(DatabaseTable):
 
         with self.connection:
             with self.connection.cursor() as cursor:
-                cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause}', where_values)
+                cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause};', where_values)
                 records = cursor.fetchall()
 
         return [
@@ -423,7 +425,7 @@ class PostGresTable(DatabaseTable):
                         if len(record_without_primary_key) > 0:
                             if len(record_without_primary_key) > 1:
                                 cursor.execute(
-                                    f'UPDATE {self.name} SET ({", ".join(record_without_primary_key.keys())}) = %s'
+                                    f'UPDATE {self.name} SET ({", ".join(record_without_primary_key.keys())}) = %s;'
                                     f' WHERE {primary_key_string} = %s;',
                                     [
                                         tuple(record_without_primary_key.values()),
@@ -432,7 +434,7 @@ class PostGresTable(DatabaseTable):
                                 )
                             else:
                                 cursor.execute(
-                                    f'UPDATE {self.name} SET {tuple(record_without_primary_key.keys())[0]} = %s'
+                                    f'UPDATE {self.name} SET {tuple(record_without_primary_key.keys())[0]} = %s;'
                                     f' WHERE {primary_key_string} = %s;',
                                     [
                                         tuple(record_without_primary_key.values())[0],
@@ -564,6 +566,55 @@ class PostGresTable(DatabaseTable):
                 where_values = None
 
         return where_clause, where_values
+
+
+def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: Any}:
+    """
+    Parse the values in the given record into their respective field types.
+
+    :param record: dictionary mapping fields to values
+    :param field_types: dictionary mapping fields to types
+    :return: record with values parsed into their respective types
+    """
+
+    for field, value in record.items():
+        if field in field_types:
+            field_type = field_types[field]
+            value_type = type(value)
+
+            if value_type is not field_type and value is not None:
+                if field_type is bool:
+                    value = (
+                        bool(value)
+                        if value_type is not str
+                        else literal_eval(value.capitalize())
+                    )
+                elif field_type is int:
+                    value = int(value)
+                elif field_type is float:
+                    value = float(value)
+                elif field_type is str:
+                    value = str(value)
+                elif value_type in (str, bytes):
+                    if field_type is list:
+                        value = literal_eval(value)
+                    elif field_type in (date, datetime):
+                        value = datetime.strptime(value, '%Y%m%d')
+                        if field_type is date:
+                            value = value.date()
+                    elif field_type.__name__ in GEOMETRY_TYPES:
+                        try:
+                            value = wkb.loads(value, hex=True)
+                        except:
+                            try:
+                                value = wkt.loads(value)
+                            except:
+                                try:
+                                    value = wkb.loads(value)
+                                except TypeError:
+                                    value = shapely_shape(literal_eval(value))
+                record[field] = value
+    return record
 
 
 def database_has_table(cursor: psycopg2._psycopg.cursor, table: str) -> bool:
