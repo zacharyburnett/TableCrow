@@ -425,8 +425,8 @@ class PostGresTable(DatabaseTable):
                         if len(record_without_primary_key) > 0:
                             if len(record_without_primary_key) > 1:
                                 cursor.execute(
-                                    f'UPDATE {self.name} SET ({", ".join(record_without_primary_key.keys())}) = %s;'
-                                    f' WHERE {primary_key_string} = %s;',
+                                    f'UPDATE {self.name} SET ({", ".join(record_without_primary_key.keys())}) = %s '
+                                    f'WHERE {primary_key_string} = %s;',
                                     [
                                         tuple(record_without_primary_key.values()),
                                         primary_key_value,
@@ -434,8 +434,8 @@ class PostGresTable(DatabaseTable):
                                 )
                             else:
                                 cursor.execute(
-                                    f'UPDATE {self.name} SET {tuple(record_without_primary_key.keys())[0]} = %s;'
-                                    f' WHERE {primary_key_string} = %s;',
+                                    f'UPDATE {self.name} SET {tuple(record_without_primary_key.keys())[0]} = %s '
+                                    f'WHERE {primary_key_string} = %s;',
                                     [
                                         tuple(record_without_primary_key.values())[0],
                                         primary_key_value,
