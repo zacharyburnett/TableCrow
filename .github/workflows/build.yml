@@ -11,8 +11,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        python-version: [3.8]
+        os: [ ubuntu-latest ]
+        python-version: [ 3.8 ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -52,7 +52,7 @@ jobs:
           path: ./dist/*.tar.gz
   upload_pypi:
     name: publish wheel to PyPI
-    needs: [build_wheels, build_sdist]
+    needs: [ build_wheels, build_sdist ]
     runs-on: ubuntu-latest
     steps:
       - name: Retrieve wheel

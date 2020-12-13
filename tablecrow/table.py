@@ -1,15 +1,11 @@
 from abc import ABC, abstractmethod
-from ast import literal_eval
-from datetime import date, datetime
 import logging
 from logging import Logger
-import re
 import socket
 from typing import Any, Generator, Mapping, Sequence, Union
 
-from shapely import wkb, wkt
-from shapely.errors import WKBReadingError, WKTReadingError
-from shapely.geometry import LinearRing, MultiPolygon, Polygon, shape as shapely_shape
+from pyproj import CRS
+from shapely.geometry import LinearRing, MultiPolygon, Polygon
 from shapely.geometry.base import BaseGeometry, GEOMETRY_TYPES
 
 
@@ -18,54 +14,65 @@ class DatabaseTable(ABC):
     FIELD_TYPES: {str: str} = NotImplementedError
 
     def __init__(
-            self,
-            hostname: str,
-            database: str,
-            name: str,
-            fields: {str: type},
-            primary_key: Union[str, Sequence[str]] = None,
-            username: str = None,
-            password: str = None,
-            users: [str] = None,
-            logger: Logger = None,
+        self,
+        database: str,
+        name: str,
+        fields: {str: type},
+        primary_key: Union[str, Sequence[str]] = None,
+        crs: CRS = None,
+        hostname: str = None,
+        username: str = None,
+        password: str = None,
+        users: [str] = None,
+        logger: Logger = None,
     ):
         """
         Create a new database table interface.
 
-        :param hostname: URL of database server as `hostname:port`
         :param database: name of database in server
         :param name: name of table in database
         :param fields: dictionary of fields
         :param primary_key: primary key field(s)
+        :param crs: coordinate reference system of table geometries
+        :param hostname: URL of database server as `hostname:port`
         :param username: username to connect ot database
         :param password: password to connect to database
         :param users: list of database users / roles
         """
 
-        hostname, port = split_URL_port(hostname)
-        if port is None:
-            port = self.DEFAULT_PORT
-        if '@' in hostname:
-            username, hostname = hostname.split('@', 1)
-        if ':' in username:
+        if hostname is not None:
+            hostname, port = split_URL_port(hostname)
+            if port is None:
+                port = self.DEFAULT_PORT
+            if '@' in hostname:
+                username, hostname = hostname.split('@', 1)
+        else:
+            port = None
+
+        if username is not None and ':' in username:
             username, password = username.split(':', 1)
+
         if primary_key is None:
             primary_key = [list(fields)[0]]
         elif not isinstance(primary_key, Sequence) or isinstance(primary_key, str):
             primary_key = [primary_key]
+
+        self.__crs = parse_crs(crs) if crs is not None else None
+
         if users is None:
             users = []
+
         if logger is None:
             logger = logging.getLogger('dummy')
-
-        self.__hostname = hostname
-        self.__port = port
 
         self.__database = database
         self.__name = name
 
         self.__fields = fields
         self.__primary_key = primary_key
+
+        self.__hostname = hostname
+        self.__port = port
 
         self.__username = username
         self.__password = password
@@ -99,6 +106,10 @@ class DatabaseTable(ABC):
         return self.__primary_key
 
     @property
+    def crs(self) -> CRS:
+        return self.__crs
+
+    @property
     def username(self) -> str:
         return self.__username
 
@@ -111,10 +122,12 @@ class DatabaseTable(ABC):
         return self.__users
 
     @property
+    @abstractmethod
     def exists(self) -> bool:
         raise NotImplementedError
 
     @property
+    @abstractmethod
     def schema(self) -> str:
         """ SQL schema string """
         raise NotImplementedError
@@ -134,6 +147,7 @@ class DatabaseTable(ABC):
         return geometry_fields
 
     @property
+    @abstractmethod
     def remote_fields(self) -> {str: type}:
         """ fields at remote table """
         raise NotImplementedError
@@ -155,8 +169,9 @@ class DatabaseTable(ABC):
         """ list of records in the table """
         return self.records_where(None)
 
+    @abstractmethod
     def records_where(
-            self, where: Union[Mapping[str, Any], str, Sequence[str]]
+        self, where: Union[Mapping[str, Any], str, Sequence[str]]
     ) -> [{str: Any}]:
         """
         list of records in the table that match the query
@@ -167,6 +182,7 @@ class DatabaseTable(ABC):
 
         raise NotImplementedError
 
+    @abstractmethod
     def insert(self, records: [{str: Any}]):
         """
         insert the list of records into the table
@@ -176,6 +192,7 @@ class DatabaseTable(ABC):
 
         raise NotImplementedError
 
+    @abstractmethod
     def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
         """
         delete records from the table matching the given query
@@ -304,59 +321,9 @@ class DatabaseTable(ABC):
 
     def __repr__(self) -> str:
         return (
-            f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.name)}, '
-            f'{repr(self.fields)}, {repr(self.primary_key)}, '
-            f'{repr(self.username)}, {repr(re.sub(".", "*", self.password))}, {repr(self.users)})'
+            f'{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, {repr(self.fields)}, {repr(self.primary_key)}, '
+            f'{repr(self.hostname)}, {repr(self.username)}, {repr("*" * len(self.password))}, {repr(self.users)})'
         )
-
-
-def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: Any}:
-    """
-    Parse the values in the given record into their respective field types.
-
-    :param record: dictionary mapping fields to values
-    :param field_types: dictionary mapping fields to types
-    :return: record with values parsed into their respective types
-    """
-
-    for field, value in record.items():
-        if field in field_types:
-            field_type = field_types[field]
-            value_type = type(value)
-
-            if value_type is not field_type and value is not None:
-                if field_type is bool:
-                    value = (
-                        bool(value)
-                        if value_type is not str
-                        else literal_eval(value.capitalize())
-                    )
-                elif field_type is int:
-                    value = int(value)
-                elif field_type is float:
-                    value = float(value)
-                elif field_type is str:
-                    value = str(value)
-                elif value_type is str:
-                    if field_type is list:
-                        value = literal_eval(value)
-                    elif field_type in (date, datetime):
-                        value = datetime.strptime(value, '%Y%m%d')
-                        if field_type is date:
-                            value = value.date()
-                    elif field_type.__name__ in GEOMETRY_TYPES:
-                        try:
-                            value = wkb.loads(value, hex=True)
-                        except WKBReadingError:
-                            try:
-                                value = wkt.loads(value)
-                            except WKTReadingError:
-                                try:
-                                    value = wkb.loads(value)
-                                except TypeError:
-                                    value = shapely_shape(literal_eval(value))
-                record[field] = value
-    return record
 
 
 def random_open_tcp_port() -> int:
@@ -386,6 +353,98 @@ def split_URL_port(url: str) -> (str, Union[str, None]):
             port = int(port)
 
     return url, port
+
+
+def crs_key(crs: CRS) -> str:
+    if not isinstance(crs, CRS):
+        crs = parse_crs(crs)
+    return crs.wkt.split('"')[1]
+
+
+def is_compound_crs(crs: CRS) -> bool:
+    if not isinstance(crs, CRS):
+        crs = parse_crs(crs)
+    return 'COMPD_CS' in crs.wkt or 'COMPOUNDCRS' in crs.wkt
+
+
+def split_compound_crs(crs: CRS) -> [CRS]:
+    """
+    Split the given compound coordinate reference system into its constituent CRS parts.
+
+    :param crs: compound CRS
+    :returns: list of CRS parts
+    """
+
+    if type(crs) is not CRS:
+        crs = parse_crs(crs)
+
+    if is_compound_crs(crs):
+        working_string = crs.wkt
+
+        # remove the compound CRS keyword and name from the string, along with the closing bracket
+        working_string = working_string.split(',', 1)[-1][:-1]
+
+        wkts = []
+        while len(working_string) > 0:
+            opening_brackets = 0
+            closing_brackets = 0
+            for index, character in enumerate(working_string):
+                if character == '[':
+                    opening_brackets += 1
+                elif character == ']':
+                    closing_brackets += 1
+
+                if opening_brackets > 0 and opening_brackets == closing_brackets:
+                    wkts.append(working_string[: index + 1])
+                    working_string = working_string[index + 2:]
+                    break
+            else:
+                wkts.append(working_string)
+                break
+
+        return [CRS.from_string(wkt) for wkt in wkts]
+
+
+def compound_crs(crs_list: [CRS], key: str = None) -> CRS:
+    """
+    Build a compound coordinate reference system from the provided list of constituent CRSs.
+
+    :param crs_list: list of coordinate reference systems
+    :param key: name of CRS
+    :returns: compound CRS
+    """
+
+    crs_list = [crs if type(crs) is CRS else parse_crs(crs) for crs in crs_list]
+
+    if key is None:
+        key = ' + '.join(crs_key(crs) for crs in crs_list)
+
+    # TODO is keyword specced as COMPOUNDCRS?
+    return CRS.from_string(f'COMPD_CS["{key}", {", ".join(crs.wkt for crs in crs_list)}]')
+
+
+def parse_crs(crs: Union[str, int]) -> CRS:
+    """
+    Parse a CRS object from the given well-known text or EPSG code.
+
+    :param crs: coordinate reference system; either well-known text or an EPSG code
+    :returns: CRS object
+    """
+
+    if isinstance(crs, CRS):
+        return crs
+    elif (
+        isinstance(crs, str)
+        and '+' in crs
+        and 'COMPD_CS' not in crs
+        and 'COMPOUNDCRS' not in crs
+    ):
+        return compound_crs([parse_crs(crs_part.strip()) for crs_part in crs.split('+')])
+    else:
+        try:
+            return CRS.from_epsg(int(crs))
+        except ValueError:
+            return CRS.from_string(str(crs))
 
 
 def flatten_geometry(geometry: BaseGeometry) -> BaseGeometry:

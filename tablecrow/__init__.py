@@ -1,1 +1,2 @@
-from .tables import PostGresTable
+from .tables.postgres import PostGresTable
+from .tables.sqlite import SQLiteTable

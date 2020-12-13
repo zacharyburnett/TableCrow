@@ -1,7 +1,7 @@
+from ast import literal_eval
 from datetime import date, datetime
 from functools import partial
 from logging import Logger
-import re
 from typing import (
     Any,
     Collection,
@@ -13,12 +13,13 @@ from typing import (
 
 import psycopg2
 from pyproj import CRS
+from shapely import wkb, wkt
+from shapely.geometry import shape as shapely_shape
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry, GEOMETRY_TYPES
 from sshtunnel import SSHTunnelForwarder
 
 from ..table import (
     DatabaseTable,
-    parse_record_values,
     random_open_tcp_port,
     split_URL_port,
 )
@@ -46,23 +47,31 @@ class PostGresTable(DatabaseTable):
     }
 
     def __init__(
-            self,
-            hostname: str,
-            database: str,
-            name: str,
-            fields: {str: type},
-            primary_key: Union[str, Sequence[str]] = None,
-            crs: CRS = None,
-            username: str = None,
-            password: str = None,
-            users: [str] = None,
-            logger: Logger = None,
-            **kwargs,
+        self,
+        database: str,
+        name: str,
+        fields: {str: type},
+        primary_key: Union[str, Sequence[str]] = None,
+        crs: CRS = None,
+        hostname: str = None,
+        username: str = None,
+        password: str = None,
+        users: [str] = None,
+        logger: Logger = None,
+        **kwargs,
     ):
         super().__init__(
-            hostname, database, name, fields, primary_key, username, password, users, logger
+            database,
+            name,
+            fields,
+            primary_key,
+            crs,
+            hostname,
+            username,
+            password,
+            users,
+            logger,
         )
-        self.crs = crs if crs is not None else DEFAULT_CRS
 
         connector = partial(
             psycopg2.connect,
@@ -185,8 +194,7 @@ class PostGresTable(DatabaseTable):
                             copy_table_fields = [record[0] for record in cursor.fetchall()]
 
                             cursor.execute(
-                                f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) '
-                                f'SELECT * FROM {copy_table_name};'
+                                f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) SELECT * FROM {copy_table_name};'
                             )
 
                             cursor.execute(f'DROP TABLE {copy_table_name};')
@@ -207,12 +215,12 @@ class PostGresTable(DatabaseTable):
 
     @property
     def schema(self) -> str:
-        """ PostGreSQL schema string """
+        """ PostGres schema string """
 
         schema = []
         for field, field_type in self.fields.items():
             if field_type in [list, tuple, Sequence, Collection]:
-                field_type = [typing_get_args(field_type)[0]]
+                field_type = [typing_get_args(field_type[0])]
             dimensions = 0
             while isinstance(field_type, Sequence) and not isinstance(field_type, str):
                 if len(field_type) > 0:
@@ -223,9 +231,12 @@ class PostGresTable(DatabaseTable):
             if isinstance(field_type, Mapping):
                 field_type = dict
 
-            schema.append(
-                f'{field} {self.FIELD_TYPES[field_type.__name__]}{"[]" * dimensions}'
-            )
+            try:
+                field_type = self.FIELD_TYPES[field_type.__name__]
+            except KeyError:
+                raise TypeError(f'PostGres does not support type "{field_type}"')
+
+            schema.append(f'{field} {field_type}{"[]" * dimensions}')
 
         schema.append(f'PRIMARY KEY({", ".join(self.primary_key)})')
 
@@ -271,8 +282,10 @@ class PostGresTable(DatabaseTable):
                         for _ in range(dimensions):
                             field_type = [field_type]
                         fields[field] = field_type
+                else:
+                    fields = None
 
-                    return fields
+                return fields
 
     @property
     def connected(self) -> bool:
@@ -280,12 +293,13 @@ class PostGresTable(DatabaseTable):
             try:
                 with self.connection.cursor() as cursor:
                     cursor.execute('SELECT 1;')
+                    cursor.fetchone()
                 return True
-            except psycopg2.OperationalError:
+            except:
                 return False
 
     def records_where(
-            self, where: Union[Mapping[str, Any], str, Sequence[str]]
+        self, where: Union[Mapping[str, Any], str, Sequence[str]]
     ) -> [{str: Any}]:
         if not self.connected:
             raise ConnectionError(
@@ -297,11 +311,11 @@ class PostGresTable(DatabaseTable):
         with self.connection:
             with self.connection.cursor() as cursor:
                 if where_clause is None:
-                    cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.name}')
+                    cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.name};')
                 else:
                     try:
                         cursor.execute(
-                            f'SELECT * FROM {self.name} WHERE {where_clause}', where_values
+                            f'SELECT * FROM {self.name} WHERE {where_clause};', where_values
                         )
                     except psycopg2.errors.UndefinedColumn as error:
                         raise KeyError(error)
@@ -315,6 +329,39 @@ class PostGresTable(DatabaseTable):
         ]
 
         return matching_records
+
+    def records_intersecting(
+        self, geometry: BaseGeometry, crs: CRS = None, geometry_fields: [str] = None
+    ) -> [{str: Any}]:
+        if crs is None:
+            crs = self.crs
+
+        if crs.to_epsg() is None:
+            raise NotImplementedError(f'no EPSG code found for CRS "{crs}"')
+
+        if geometry_fields is None or len(geometry_fields) == 0:
+            geometry_fields = list(self.geometry_fields)
+
+        where_clause = []
+        where_values = []
+        for field in geometry_fields:
+            where_values.extend([geometry.wkt, crs.to_epsg()])
+            geometry_string = f'ST_GeomFromText(%s, %s)'
+            if crs != self.crs:
+                geometry_string = f'ST_Transform({geometry_string}, %s)'
+                where_values.append(self.crs.to_epsg())
+            where_clause.append(f'ST_Intersects({field}, {geometry_string})')
+        where_clause = ' OR '.join(where_clause)
+
+        with self.connection:
+            with self.connection.cursor() as cursor:
+                cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause};', where_values)
+                records = cursor.fetchall()
+
+        return [
+            parse_record_values(dict(zip(self.fields.keys(), record)), self.fields)
+            for record in records
+        ]
 
     def insert(self, records: [{str: Any}]):
         if isinstance(records, dict):
@@ -378,8 +425,8 @@ class PostGresTable(DatabaseTable):
                         if len(record_without_primary_key) > 0:
                             if len(record_without_primary_key) > 1:
                                 cursor.execute(
-                                    f'UPDATE {self.name} SET ({", ".join(record_without_primary_key.keys())}) = %s'
-                                    f' WHERE {primary_key_string} = %s;',
+                                    f'UPDATE {self.name} SET ({", ".join(record_without_primary_key.keys())}) = %s '
+                                    f'WHERE {primary_key_string} = %s;',
                                     [
                                         tuple(record_without_primary_key.values()),
                                         primary_key_value,
@@ -387,8 +434,8 @@ class PostGresTable(DatabaseTable):
                                 )
                             else:
                                 cursor.execute(
-                                    f'UPDATE {self.name} SET {tuple(record_without_primary_key.keys())[0]} = %s'
-                                    f' WHERE {primary_key_string} = %s;',
+                                    f'UPDATE {self.name} SET {tuple(record_without_primary_key.keys())[0]} = %s '
+                                    f'WHERE {primary_key_string} = %s;',
                                     [
                                         tuple(record_without_primary_key.values())[0],
                                         primary_key_value,
@@ -442,48 +489,6 @@ class PostGresTable(DatabaseTable):
                 cursor.execute(f'SELECT COUNT(*) FROM {self.name};')
                 return cursor.fetchone()[0]
 
-    def records_intersecting(
-            self, geometry: BaseGeometry, crs: CRS = None, geometry_fields: [str] = None
-    ) -> [{str: Any}]:
-        """
-        records in the table that intersect the given geometry
-
-        :param geometry: Shapely geometry object
-        :param crs: coordinate reference system of input geometry
-        :param geometry_fields: geometry fields to query
-        :return: dictionaries of matching records
-        """
-
-        if crs is None:
-            crs = self.crs
-
-        if crs.to_epsg() is None:
-            raise NotImplementedError(f'no EPSG code found for CRS "{crs}"')
-
-        if geometry_fields is None or len(geometry_fields) == 0:
-            geometry_fields = list(self.geometry_fields)
-
-        where_clause = []
-        where_values = []
-        for field in geometry_fields:
-            where_values.extend([geometry.wkt, crs.to_epsg()])
-            geometry_string = f'ST_GeomFromText(%s, %s)'
-            if crs != self.crs:
-                geometry_string = f'ST_Transform({geometry_string}, %s)'
-                where_values.append(self.crs.to_epsg())
-            where_clause.append(f'ST_Intersects({field}, {geometry_string})')
-        where_clause = ' OR '.join(where_clause)
-
-        with self.connection:
-            with self.connection.cursor() as cursor:
-                cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause}', where_values)
-                records = cursor.fetchall()
-
-        return [
-            parse_record_values(dict(zip(self.fields.keys(), record)), self.fields)
-            for record in records
-        ]
-
     def delete_table(self):
         with self.connection:
             with self.connection.cursor() as cursor:
@@ -491,9 +496,9 @@ class PostGresTable(DatabaseTable):
 
     def __repr__(self) -> str:
         return (
-            f'{self.__class__.__name__}({repr(self.hostname)}, {repr(self.database)}, {repr(self.name)}, '
-            f'{repr(self.fields)}, {repr(self.primary_key)}, {repr(self.crs.to_epsg())}, '
-            f'{repr(self.username)}, {repr(re.sub("..", "*", self.password))}, {repr(self.users)})'
+            f'{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, {repr(self.fields)}, {repr(self.primary_key)}, '
+            f'{repr(self.hostname)}, {repr(self.crs.to_epsg()) if self.crs is not None else None}, '
+            f'{repr(self.username)}, {repr("*" * len(self.password))}, {repr(self.users)})'
         )
 
     def __del__(self):
@@ -502,9 +507,9 @@ class PostGresTable(DatabaseTable):
 
     def __where_clause(self, where: {str: Union[Any, list]}) -> (str, [Any]):
         if (
-                where is not None
-                and not isinstance(where, Sequence)
-                and not isinstance(where, dict)
+            where is not None
+            and not isinstance(where, Sequence)
+            and not isinstance(where, dict)
         ):
             raise NotImplementedError(f'unsupported query type "{type(where)}"')
 
@@ -521,7 +526,7 @@ class PostGresTable(DatabaseTable):
                 for field, value in where.items():
                     field_type = self.fields[field]
                     if isinstance(value, BaseGeometry) or isinstance(
-                            value, BaseMultipartGeometry
+                        value, BaseMultipartGeometry
                     ):
                         where_clause.append(f'{field} = ST_GeomFromText(%s, %s)')
                         where_values.extend([value.wkt, self.crs.to_epsg()])
@@ -561,6 +566,55 @@ class PostGresTable(DatabaseTable):
                 where_values = None
 
         return where_clause, where_values
+
+
+def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: Any}:
+    """
+    Parse the values in the given record into their respective field types.
+
+    :param record: dictionary mapping fields to values
+    :param field_types: dictionary mapping fields to types
+    :return: record with values parsed into their respective types
+    """
+
+    for field, value in record.items():
+        if field in field_types:
+            field_type = field_types[field]
+            value_type = type(value)
+
+            if value_type is not field_type and value is not None:
+                if field_type is bool:
+                    value = (
+                        bool(value)
+                        if value_type is not str
+                        else literal_eval(value.capitalize())
+                    )
+                elif field_type is int:
+                    value = int(value)
+                elif field_type is float:
+                    value = float(value)
+                elif field_type is str:
+                    value = str(value)
+                elif value_type in (str, bytes):
+                    if field_type is list:
+                        value = literal_eval(value)
+                    elif field_type in (date, datetime):
+                        value = datetime.strptime(value, '%Y%m%d')
+                        if field_type is date:
+                            value = value.date()
+                    elif field_type.__name__ in GEOMETRY_TYPES:
+                        try:
+                            value = wkb.loads(value, hex=True)
+                        except:
+                            try:
+                                value = wkt.loads(value)
+                            except:
+                                try:
+                                    value = wkb.loads(value)
+                                except TypeError:
+                                    value = shapely_shape(literal_eval(value))
+                record[field] = value
+    return record
 
 
 def database_has_table(cursor: psycopg2._psycopg.cursor, table: str) -> bool:
