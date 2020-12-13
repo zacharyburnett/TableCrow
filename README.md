@@ -83,16 +83,13 @@ table.delete_where({'name': None})
 
 ```python
 from datetime import datetime
-from tablecrow import PostGresTable
+from tablecrow import SQLiteTable
 
-table = PostGresTable(
-    hostname='localhost:5432',
-    database='postgres',
+table = SQLiteTable(
+    database='test_database.db',
     name='testing',
     fields={'id': int, 'time': datetime, 'length': float, 'name': str},
     primary_key=('id', 'name'),
-    username='postgres',
-    password='<password>',
 )
 
 # a compound primary key allows more flexibility in ID
