@@ -355,7 +355,9 @@ class PostGresTable(DatabaseTable):
 
         with self.connection:
             with self.connection.cursor() as cursor:
-                cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause};', where_values)
+                cursor.execute(
+                    f'SELECT * FROM {self.name} WHERE {where_clause};', where_values
+                )
                 records = cursor.fetchall()
 
         return [
