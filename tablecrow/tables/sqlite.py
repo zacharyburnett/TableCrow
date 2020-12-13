@@ -66,11 +66,15 @@ class SQLiteTable(DatabaseTable):
             try:
                 self.connection.execute('SELECT load_extension("mod_spatialite")')
             except:
-                raise EnvironmentError(
-                    'SpatiaLite module was not found; '
-                    'download the module from [Gaia GIS](http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/spatialite-loadable-modules-5.0.0-win-amd64.7z) '
-                    'and place `mod_spatialite.dll` / `mod_spatialite.so` in your `PATH`'
-                )
+                import platform
+                system_platform = platform.system()
+                if system_platform == 'Windows':
+                    message = 'download the module from `http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/spatialite-loadable-modules-5.0.0-win-amd64.7z` and place `mod_spatialite.dll` / `mod_spatialite.so` in your `PATH`'
+                elif system_platform in ['Linux', 'Darwin']:
+                    message = 'run the following: \n' \
+                              'sudo apt install libsqlite3-mod-spatialite \n' \
+                              'ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite'
+                raise EnvironmentError(f'SpatiaLite module was not found; {message}')
 
         with self.connection:
             cursor = self.connection.cursor()
