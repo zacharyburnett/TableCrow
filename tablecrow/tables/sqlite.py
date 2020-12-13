@@ -15,9 +15,7 @@ from shapely import wkb, wkt
 from shapely.geometry import shape as shapely_shape
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 
-from ..table import (
-    DatabaseTable,
-)
+from ..table import DatabaseTable
 
 DEFAULT_CRS = CRS.from_epsg(4326)
 SSH_DEFAULT_PORT = 22
@@ -67,13 +65,16 @@ class SQLiteTable(DatabaseTable):
                 self.connection.execute('SELECT load_extension("mod_spatialite")')
             except:
                 import platform
+
                 system_platform = platform.system()
                 if system_platform == 'Windows':
                     message = 'download the module from `http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/spatialite-loadable-modules-5.0.0-win-amd64.7z` and place `mod_spatialite.dll` / `mod_spatialite.so` in your `PATH`'
                 elif system_platform in ['Linux', 'Darwin']:
-                    message = 'run the following: \n' \
-                              'sudo apt install libsqlite3-mod-spatialite \n' \
-                              'ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite'
+                    message = (
+                        'run the following: \n'
+                        'sudo apt install libsqlite3-mod-spatialite \n'
+                        'ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite'
+                    )
                 raise EnvironmentError(f'SpatiaLite module was not found; {message}')
 
         with self.connection:
@@ -279,25 +280,46 @@ class SQLiteTable(DatabaseTable):
             where_clause.append(f'Intersects({field}, {geometry_string})')
         where_clause = ' OR '.join(where_clause)
 
-        non_geometry_fields = {field: field_type for field, field_type in self.fields.items()
-                               if field_type.__name__ not in GEOMETRY_TYPES}
+        non_geometry_fields = {
+            field: field_type
+            for field, field_type in self.fields.items()
+            if field_type.__name__ not in GEOMETRY_TYPES
+        }
 
         with self.connection:
             cursor = self.connection.cursor()
-            cursor.execute(f'SELECT {", ".join(non_geometry_fields)} '
-                           f'FROM {self.name} WHERE {where_clause};', where_values)
+            cursor.execute(
+                f'SELECT {", ".join(non_geometry_fields)} '
+                f'FROM {self.name} WHERE {where_clause};',
+                where_values,
+            )
             non_geometry_records = cursor.fetchall()
-            non_geometry_records = [parse_record_values(dict(zip(non_geometry_fields.keys(), record)), non_geometry_fields) for record in
-                                    non_geometry_records]
+            non_geometry_records = [
+                parse_record_values(
+                    dict(zip(non_geometry_fields.keys(), record)), non_geometry_fields
+                )
+                for record in non_geometry_records
+            ]
 
-            geometry_field_string = ", ".join(f'asbinary({geometry_field})' for geometry_field in self.geometry_fields)
-            cursor.execute(f'SELECT {geometry_field_string} '
-                           f'FROM {self.name} WHERE {where_clause};', where_values)
+            geometry_field_string = ', '.join(
+                f'asbinary({geometry_field})' for geometry_field in self.geometry_fields
+            )
+            cursor.execute(
+                f'SELECT {geometry_field_string} ' f'FROM {self.name} WHERE {where_clause};',
+                where_values,
+            )
             geometry_records = cursor.fetchall()
-            geometry_records = [parse_record_values(dict(zip(self.geometry_fields.keys(), record)), self.geometry_fields)
-                                for record in geometry_records]
+            geometry_records = [
+                parse_record_values(
+                    dict(zip(self.geometry_fields.keys(), record)), self.geometry_fields
+                )
+                for record in geometry_records
+            ]
 
-        records = [{**non_geometry_records[index], **geometry_records[index]} for index in range(len(non_geometry_records))]
+        records = [
+            {**non_geometry_records[index], **geometry_records[index]}
+            for index in range(len(non_geometry_records))
+        ]
         return [{field: record[field] for field in self.fields} for record in records]
 
     def insert(self, records: [{str: Any}]):
@@ -356,11 +378,12 @@ class SQLiteTable(DatabaseTable):
                     ):
                         primary_key_value = [primary_key_value]
                     if len(record_without_primary_key) > 0:
-                        cursor.execute(f'UPDATE {self.name} '
-                                       f'SET ({", ".join(record_without_primary_key.keys())}) = ({", ".join("?" for _ in record_without_primary_key)})'
-                                       f' WHERE {primary_key_string} = ({", ".join("?" for _ in primary_key_value)});',
-                                       [*record_without_primary_key.values(), *primary_key_value, ],
-                                       )
+                        cursor.execute(
+                            f'UPDATE {self.name} '
+                            f'SET ({", ".join(record_without_primary_key.keys())}) = ({", ".join("?" for _ in record_without_primary_key)})'
+                            f' WHERE {primary_key_string} = ({", ".join("?" for _ in primary_key_value)});',
+                            [*record_without_primary_key.values(), *primary_key_value, ],
+                        )
                 else:
                     cursor.execute(
                         f'INSERT INTO {self.name} ({", ".join(columns)}) VALUES ({", ".join("?" for _ in values)});',
