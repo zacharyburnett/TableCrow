@@ -35,7 +35,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .[testing]
-          sudo apt-get install libsqlite3-mod-spatialite
+          sudo apt install libsqlite3-mod-spatialite
+          ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
