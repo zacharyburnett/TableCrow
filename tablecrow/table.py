@@ -315,6 +315,9 @@ class DatabaseTable(ABC):
         except KeyError:
             return False
 
+    def __iter__(self) -> Generator:
+        yield from self.records
+
     @abstractmethod
     def delete_table(self):
         raise NotImplementedError
