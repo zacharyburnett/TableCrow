@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 import os
 import sqlite3
 
@@ -39,10 +39,11 @@ def test_table_creation():
         'primary_key_field': int,
         'field_1': str,
         'field_2': float,
-        'field_3': str,
-        'field_4': str,
-        'field_5': Point,
-        'field_6': MultiPolygon,
+        'field_3': datetime,
+        'field_4': date,
+        'field_5': bool,
+        'field_6': Point,
+        'field_7': MultiPolygon,
     }
 
     with sqlite_connection() as connection:
@@ -79,7 +80,7 @@ def test_compound_primary_key():
     fields = {
         'primary_key_field_1': int,
         'primary_key_field_2': str,
-        'primary_key_field_3': str,
+        'primary_key_field_3': datetime,
         'field_1': float,
         'field_2': str,
     }
@@ -145,9 +146,6 @@ def test_compound_primary_key():
         if database_has_table(cursor, table_name):
             cursor.execute(f'DROP TABLE {table_name};')
 
-    for record in records + [extra_record]:
-        record['primary_key_field_3'] = f'{record["primary_key_field_3"]}'
-
     assert test_primary_key == primary_key
     assert test_records == records + [extra_record]
     assert test_record == records[0]
@@ -159,14 +157,15 @@ def test_record_insertion():
 
     fields = {
         'primary_key_field': int,
-        'field_1': str,
+        'field_1': datetime,
         'field_2': float,
         'field_3': str,
+        'field_4': bool,
     }
 
     records = [
-        {'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1'},
-        {'primary_key_field': 2, 'field_1': datetime(2020, 1, 2), 'field_2': 5.67},
+        {'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1', 'field_4': None},
+        {'primary_key_field': 2, 'field_1': datetime(2020, 1, 2), 'field_2': 5.67, 'field_4': True},
     ]
 
     extra_record = {
@@ -174,6 +173,7 @@ def test_record_insertion():
         'field_1': datetime(2020, 1, 3),
         'field_2': 3,
         'field_3': 'test 3',
+        'field_4': False,
     }
 
     with sqlite_connection() as connection:
@@ -218,9 +218,6 @@ def test_record_insertion():
         cursor = connection.cursor()
         cursor.execute(f'DROP TABLE {table_name};')
 
-    for record in records + [extra_record]:
-        record['field_1'] = f'{record["field_1"]}'
-
     assert test_records_before_addition == records
     assert test_records_after_addition == records + [extra_record]
     assert test_records_after_deletion == records
@@ -231,7 +228,7 @@ def test_table_flexibility():
 
     fields = {
         'primary_key_field': int,
-        'field_1': str,
+        'field_1': datetime,
         'field_2': float,
         'field_3': str,
     }
@@ -248,7 +245,7 @@ def test_table_flexibility():
     # create table with incomplete fields
     incomplete_table = SQLiteTable(
         name=table_name,
-        fields=incomplete_fields,
+        fields=incomplete_fields.copy(),
         primary_key='primary_key_field',
         **CREDENTIALS['sqlite'],
     )
@@ -275,7 +272,7 @@ def test_table_flexibility():
     # create table with incomplete fields, pointing to existing remote table with complete fields
     completed_table = SQLiteTable(
         name=table_name,
-        fields=incomplete_fields,
+        fields=incomplete_fields.copy(),
         primary_key='primary_key_field',
         **CREDENTIALS['sqlite'],
     )
@@ -286,6 +283,7 @@ def test_table_flexibility():
         test_completed_remote_fields = database_table_fields(cursor, table_name)
         cursor.execute(f'DROP TABLE {table_name};')
 
+    assert list(test_incomplete_remote_fields) == list(incomplete_fields)
     assert list(test_complete_remote_fields) == list(fields)
     assert list(test_completed_remote_fields) == list(fields)
 
@@ -299,7 +297,7 @@ def test_table_flexibility():
 def test_records_where():
     table_name = 'test_records_where'
 
-    fields = {'primary_key_field': int, 'field_1': str, 'field_2': str}
+    fields = {'primary_key_field': int, 'field_1': datetime, 'field_2': str}
 
     records = [
         {'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_2': 'test 1'},
@@ -348,9 +346,6 @@ def test_records_where():
         cursor = connection.cursor()
         cursor.execute(f'DROP TABLE {table_name};')
 
-    for record in records:
-        record['field_1'] = f'{record["field_1"]}'
-
     assert test_record_query_1 == [records[0]]
     assert test_record_query_2 == [records[0], records[2]]
     assert test_record_query_3 == records[:2]
@@ -366,19 +361,21 @@ def test_field_reorder():
 
     fields = {
         'primary_key_field': int,
-        'field_1': str,
+        'field_1': datetime,
         'field_2': float,
         'field_3': str,
+        'field_4': date,
     }
 
     reordered_fields = {
+        'field_4': date,
         'field_2': float,
         'primary_key_field': int,
-        'field_1': str,
+        'field_1': datetime,
         'field_3': str,
     }
 
-    records = [{'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1'}]
+    records = [{'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1', 'field_4': date(2020, 1, 2)}]
 
     with sqlite_connection() as connection:
         cursor = connection.cursor()
@@ -413,9 +410,6 @@ def test_field_reorder():
 
     assert list(test_fields) == list(fields)
     assert list(test_reordered_fields) == list(reordered_fields)
-
-    for record in records:
-        record['field_1'] = f'{record["field_1"]}'
 
     for test_records in (test_records, test_reordered_records):
         for record_index, record in enumerate(records):

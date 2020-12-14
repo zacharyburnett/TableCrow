@@ -33,9 +33,12 @@ GEOMETRY_TYPES = [
 class SQLiteTable(DatabaseTable):
     FIELD_TYPES = {
         'NoneType': 'NULL',
+        'bool': 'BOOLEAN',
         'float': 'REAL',
         'int': 'INTEGER',
         'str': 'TEXT',
+        'date': 'DATE',
+        'datetime': 'DATETIME',
         'bytes': 'BLOB',
         **{geometry_type: geometry_type.upper() for geometry_type in GEOMETRY_TYPES},
     }
@@ -533,8 +536,10 @@ def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: A
                 elif field_type is str:
                     value = str(value)
                 elif value_type in (str, bytes):
-                    if field_type is list:
-                        value = literal_eval(value)
+                    if field_type is datetime:
+                        value = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+                    elif field_type is date:
+                        value = datetime.strptime(value, '%Y-%m-%d').date()
                     elif field_type.__name__ in GEOMETRY_TYPES:
                         try:
                             value = wkb.loads(value, hex=True)

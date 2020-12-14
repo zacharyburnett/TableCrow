@@ -600,10 +600,10 @@ def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: A
                 elif value_type in (str, bytes):
                     if field_type is list:
                         value = literal_eval(value)
-                    elif field_type in (date, datetime):
-                        value = datetime.strptime(value, '%Y%m%d')
-                        if field_type is date:
-                            value = value.date()
+                    elif field_type is datetime:
+                        value = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+                    elif field_type is date:
+                        value = datetime.strptime(value, '%Y-%m-%d').date()
                     elif field_type.__name__ in GEOMETRY_TYPES:
                         try:
                             value = wkb.loads(value, hex=True)
