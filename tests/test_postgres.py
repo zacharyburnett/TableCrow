@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from functools import partial
 import os
 
@@ -466,16 +466,18 @@ def test_field_reorder(connection):
         'field_1': datetime,
         'field_2': float,
         'field_3': str,
+        'field_4': date,
     }
 
     reordered_fields = {
+        'field_4': date,
         'field_2': float,
         'primary_key_field': int,
         'field_1': datetime,
         'field_3': str,
     }
 
-    records = [{'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1'}]
+    records = [{'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1', 'field_4': date(2020, 1, 2)}]
 
     with connection:
         with connection.cursor() as cursor:
