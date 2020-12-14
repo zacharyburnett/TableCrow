@@ -6,8 +6,8 @@
 [![license](https://img.shields.io/github/license/zacharyburnett/tablecrow)](https://opensource.org/licenses/MIT)
 [![style](https://sourceforge.net/p/oitnb/code/ci/default/tree/_doc/_static/oitnb.svg?format=raw)](https://sourceforge.net/p/oitnb/code)
 
-`tablecrow` is an abstraction library over a generalized database table. Currently, `tablecrow` offers an abstraction for PostGreSQL tables with
-simple PostGIS operations.
+`tablecrow` is an abstraction library over a generalized database table. Currently, `tablecrow` offers an abstraction for PostGreSQL and SQLite tables with
+simple PostGIS and SpatiaLite operations.
 
 ```bash
 pip install tablecrow
