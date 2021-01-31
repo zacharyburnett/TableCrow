@@ -188,10 +188,8 @@ class PostGresTable(DatabaseTable):
 
                             copy_table_fields = list(database_table_fields(cursor, copy_table_name))
 
-                            self.logger.debug(copy_table_fields)
-
                             cursor.execute(
-                                f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) SELECT ({", ".join(copy_table_fields)}) FROM {copy_table_name};'
+                                f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) SELECT {", ".join(copy_table_fields)} FROM {copy_table_name};'
                             )
 
                             cursor.execute(f'DROP TABLE {copy_table_name};')
