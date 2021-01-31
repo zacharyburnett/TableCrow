@@ -9,7 +9,7 @@ from shapely.geometry import MultiPolygon, Point, box
 from sshtunnel import SSHTunnelForwarder
 
 from tablecrow import PostGresTable
-from tablecrow.table import random_open_tcp_port, split_URL_port
+from tablecrow.table import DEFAULT_CRS, random_open_tcp_port, split_URL_port
 from tablecrow.tables.postgres import (
     SSH_DEFAULT_PORT,
     database_has_table,
@@ -559,6 +559,27 @@ def test_nonexistent_field_in_inserted_record(connection):
     record_with_extra_field['field_3'] = None
 
     assert test_records == [record_with_extra_field]
+
+
+def test_missing_crs(connection):
+    table_name = 'test_missing_crs'
+
+    fields = {
+        'primary_key_field': int,
+        'field_1': str,
+        'field_2': MultiPolygon,
+        'field_3': MultiPolygon,
+    }
+
+    table = PostGresTable(
+        name=table_name,
+        fields=fields,
+        primary_key='primary_key_field',
+        crs=None,
+        **CREDENTIALS['postgres'],
+    )
+
+    assert table.crs == DEFAULT_CRS
 
 
 def test_records_intersecting_polygon(connection):

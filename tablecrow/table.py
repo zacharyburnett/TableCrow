@@ -8,6 +8,8 @@ from pyproj import CRS
 from shapely.geometry import LinearRing, MultiPolygon, Polygon
 from shapely.geometry.base import BaseGeometry, GEOMETRY_TYPES
 
+DEFAULT_CRS = CRS.from_epsg(4326)
+
 
 class DatabaseTable(ABC):
     DEFAULT_PORT = NotImplementedError
@@ -40,6 +42,14 @@ class DatabaseTable(ABC):
         :param users: list of database users / roles
         """
 
+        self.__database = database
+        self.__name = name
+
+        if logger is None:
+            logger = logging.getLogger('dummy')
+
+        self.logger = logger
+
         if hostname is not None:
             hostname, port = split_URL_port(hostname)
             if port is None:
@@ -49,37 +59,36 @@ class DatabaseTable(ABC):
         else:
             port = None
 
+        self.__hostname = hostname
+        self.__port = port
+
         if username is not None and ':' in username:
             username, password = username.split(':', 1)
+
+        self.__username = username
+        self.__password = password
 
         if primary_key is None:
             primary_key = [list(fields)[0]]
         elif not isinstance(primary_key, Sequence) or isinstance(primary_key, str):
             primary_key = [primary_key]
 
-        self.__crs = parse_crs(crs) if crs is not None else None
+        self.__fields = fields
+        self.__primary_key = primary_key
+
+        if crs is not None:
+            crs = parse_crs(crs)
+        elif len(self.geometry_fields) > 0:
+            crs = DEFAULT_CRS
+            self.logger.warning(f'no CRS provided for geometry fields; defaulting to EPSG:{crs.to_epsg()}')
+        else:
+            crs = None
+        self.__crs = crs
 
         if users is None:
             users = []
 
-        if logger is None:
-            logger = logging.getLogger('dummy')
-
-        self.__database = database
-        self.__name = name
-
-        self.__fields = fields
-        self.__primary_key = primary_key
-
-        self.__hostname = hostname
-        self.__port = port
-
-        self.__username = username
-        self.__password = password
-
         self.__users = users
-
-        self.logger = logger
 
     @property
     def hostname(self) -> str:
