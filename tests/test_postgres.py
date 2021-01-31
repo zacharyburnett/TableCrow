@@ -9,7 +9,7 @@ from shapely.geometry import MultiPolygon, Point, box
 from sshtunnel import SSHTunnelForwarder
 
 from tablecrow import PostGresTable
-from tablecrow.table import random_open_tcp_port, split_URL_port
+from tablecrow.table import DEFAULT_CRS, random_open_tcp_port, split_URL_port
 from tablecrow.tables.postgres import (
     SSH_DEFAULT_PORT,
     database_has_table,
@@ -132,7 +132,7 @@ def test_table_creation(connection):
                     cursor.execute(f'DROP TABLE {table_name};')
 
     assert test_remote_fields == fields
-    assert list(test_raw_remote_fields) == list(fields)
+    assert sorted(test_raw_remote_fields) == sorted(fields)
     assert not table_exists
 
 
@@ -211,7 +211,7 @@ def test_compound_primary_key(connection):
     assert test_primary_key == primary_key
     assert test_records == records + [extra_record]
     assert test_record == records[0]
-    assert list(test_raw_remote_fields) == list(fields)
+    assert sorted(test_raw_remote_fields) == sorted(fields)
 
 
 def test_record_insertion(connection):
@@ -559,6 +559,27 @@ def test_nonexistent_field_in_inserted_record(connection):
     record_with_extra_field['field_3'] = None
 
     assert test_records == [record_with_extra_field]
+
+
+def test_missing_crs(connection):
+    table_name = 'test_missing_crs'
+
+    fields = {
+        'primary_key_field': int,
+        'field_1': str,
+        'field_2': MultiPolygon,
+        'field_3': MultiPolygon,
+    }
+
+    table = PostGresTable(
+        name=table_name,
+        fields=fields,
+        primary_key='primary_key_field',
+        crs=None,
+        **CREDENTIALS['postgres'],
+    )
+
+    assert table.crs == DEFAULT_CRS
 
 
 def test_records_intersecting_polygon(connection):

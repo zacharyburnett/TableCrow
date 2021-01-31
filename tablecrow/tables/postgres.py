@@ -24,7 +24,6 @@ from ..table import (
     split_URL_port,
 )
 
-DEFAULT_CRS = CRS.from_epsg(4326)
 SSH_DEFAULT_PORT = 22
 
 

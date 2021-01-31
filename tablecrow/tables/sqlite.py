@@ -17,7 +17,6 @@ from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 
 from ..table import DatabaseTable
 
-DEFAULT_CRS = CRS.from_epsg(4326)
 SSH_DEFAULT_PORT = 22
 
 GEOMETRY_TYPES = [
