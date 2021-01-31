@@ -71,7 +71,7 @@ def test_table_creation():
                 cursor.execute(f'DROP TABLE {table_name};')
 
     assert test_remote_fields == fields
-    assert sorted(test_raw_remote_fields) == sorted(fields)
+    assert list(test_raw_remote_fields) == list(fields)
     assert not table_exists
 
 
@@ -150,7 +150,7 @@ def test_compound_primary_key():
     assert test_primary_key == primary_key
     assert test_records == records + [extra_record]
     assert test_record == records[0]
-    assert sorted(test_raw_remote_fields) == sorted(fields)
+    assert list(test_raw_remote_fields) == list(fields)
 
 
 def test_record_insertion():

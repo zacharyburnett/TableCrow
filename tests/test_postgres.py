@@ -131,7 +131,7 @@ def test_table_creation(connection):
                 if table_exists:
                     cursor.execute(f'DROP TABLE {table_name};')
 
-    assert test_remote_fields == fields
+    assert sorted(test_remote_fields) == sorted(fields)
     assert sorted(test_raw_remote_fields) == sorted(fields)
     assert not table_exists
 
@@ -343,8 +343,8 @@ def test_table_flexibility(connection):
             test_completed_remote_fields = database_table_fields(cursor, table_name)
             cursor.execute(f'DROP TABLE {table_name};')
 
-    assert list(test_complete_remote_fields) == list(fields)
-    assert list(test_completed_remote_fields) == list(fields)
+    assert sorted(test_complete_remote_fields) == sorted(fields)
+    assert sorted(test_completed_remote_fields) == sorted(fields)
 
     for test_records in (incomplete_records, complete_records, completed_records):
         for record_index, record in enumerate(test_records):
@@ -510,8 +510,8 @@ def test_field_reorder(connection):
             test_reordered_fields = database_table_fields(cursor, table_name)
             cursor.execute(f'DROP TABLE {table_name};')
 
-    assert list(test_fields) == list(fields)
-    assert list(test_reordered_fields) == list(reordered_fields)
+    assert sorted(test_fields) == sorted(fields)
+    assert sorted(test_reordered_fields) == sorted(reordered_fields)
 
     for test_records in (test_records, test_reordered_records):
         for record_index, record in enumerate(records):
