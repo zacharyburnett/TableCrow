@@ -211,7 +211,7 @@ def test_compound_primary_key(connection):
     assert test_primary_key == primary_key
     assert test_records == records + [extra_record]
     assert test_record == records[0]
-    assert list(test_raw_remote_fields) == list(fields)
+    assert sorted(test_raw_remote_fields) == sorted(fields)
 
 
 def test_record_insertion(connection):
