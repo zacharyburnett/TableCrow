@@ -266,6 +266,9 @@ class SQLiteTable(DatabaseTable):
         if crs is None:
             crs = self.crs
 
+        if crs is None:
+            raise ValueError('no coordinate reference system provided')
+
         if crs.to_epsg() is None:
             raise NotImplementedError(f'no EPSG code found for CRS "{crs}"')
 
@@ -467,6 +470,9 @@ class SQLiteTable(DatabaseTable):
                     if isinstance(value, BaseGeometry) or isinstance(
                         value, BaseMultipartGeometry
                     ):
+                        if self.crs is None:
+                            raise ValueError('no coordinate reference system provided')
+
                         where_clause.append(f'{field} = GeomFromText(?, ?)')
                         where_values.extend([value.wkt, self.crs.to_epsg()])
                     else:
