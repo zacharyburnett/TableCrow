@@ -7,6 +7,7 @@ import pytest
 from shapely.geometry import MultiPolygon, Point, box
 
 from tablecrow import SQLiteTable
+from tablecrow.table import DEFAULT_CRS
 from tablecrow.tables.sqlite import (
     database_has_table,
     database_table_fields,
@@ -460,6 +461,27 @@ def test_nonexistent_field_in_inserted_record():
     assert test_records == [record_with_extra_field]
 
 
+def test_missing_crs():
+    table_name = 'test_missing_crs'
+
+    fields = {
+        'primary_key_field': int,
+        'field_1': str,
+        'field_2': MultiPolygon,
+        'field_3': MultiPolygon,
+    }
+
+    table = SQLiteTable(
+        name=table_name,
+        fields=fields,
+        primary_key='primary_key_field',
+        crs=None,
+        **CREDENTIALS['sqlite'],
+    )
+
+    assert table.crs == DEFAULT_CRS
+
+
 def test_records_intersecting_polygon():
     table_name = 'test_records_intersecting_polygon'
 
@@ -476,7 +498,7 @@ def test_records_intersecting_polygon():
     touching_polygon = box(-77.1, 39.575, -76.8, 39.65)
     outside_polygon = box(-77.7, 39.425, -77.4, 39.5)
     containing_polygon = box(-77.7, 39.65, -77.1, 39.8)
-    projected_containing_polygon = box(268397.8, 4392279.8, 320292.0, 4407509.6)
+    # projected_containing_polygon = box(268397.8, 4392279.8, 320292.0, 4407509.6)
     multipolygon = MultiPolygon([inside_polygon, touching_polygon])
 
     records = [
