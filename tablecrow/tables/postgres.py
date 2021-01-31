@@ -186,14 +186,10 @@ class PostGresTable(DatabaseTable):
                                     f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};'
                                 )
 
-                            cursor.execute(
-                                'SELECT column_name FROM information_schema.columns WHERE table_name=%s;',
-                                [copy_table_name],
-                            )
-                            copy_table_fields = [record[0] for record in cursor.fetchall()]
+                            copy_table_fields = list(database_table_fields(cursor, copy_table_name))
 
                             cursor.execute(
-                                f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) SELECT * FROM {copy_table_name};'
+                                f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) SELECT {", ".join(copy_table_fields)} FROM {copy_table_name};'
                             )
 
                             cursor.execute(f'DROP TABLE {copy_table_name};')
