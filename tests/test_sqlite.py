@@ -21,7 +21,7 @@ if 'sqlite' not in CREDENTIALS:
     CREDENTIALS['sqlite'] = {}
 
 default_credentials = {
-    'database': ('SQLITE_DATABASE', 'test_database.db'),
+    'path': ('SQLITE_DATABASE', 'test_database.db'),
 }
 
 for credential, details in default_credentials.items():
@@ -30,7 +30,7 @@ for credential, details in default_credentials.items():
 
 
 def sqlite_connection() -> sqlite3.Connection:
-    return sqlite3.connect(CREDENTIALS['sqlite']['database'])
+    return sqlite3.connect(CREDENTIALS['sqlite']['path'])
 
 
 def test_table_creation():
@@ -53,7 +53,7 @@ def test_table_creation():
             cursor.execute(f'DROP TABLE {table_name};')
 
     table = SQLiteTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['sqlite'],
@@ -125,7 +125,7 @@ def test_compound_primary_key():
             cursor.execute(f'DROP TABLE {table_name};')
 
     table = SQLiteTable(
-        name=table_name, fields=fields, primary_key=primary_key, **CREDENTIALS['sqlite']
+        table_name=table_name, fields=fields, primary_key=primary_key, **CREDENTIALS['sqlite']
     )
 
     test_primary_key = primary_key
@@ -183,7 +183,7 @@ def test_record_insertion():
             cursor.execute(f'DROP TABLE {table_name};')
 
     table = SQLiteTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['sqlite'],
@@ -245,7 +245,7 @@ def test_table_flexibility():
 
     # create table with incomplete fields
     incomplete_table = SQLiteTable(
-        name=table_name,
+        table_name=table_name,
         fields=incomplete_fields.copy(),
         primary_key='primary_key_field',
         **CREDENTIALS['sqlite'],
@@ -259,7 +259,7 @@ def test_table_flexibility():
 
     # create table with complete fields, pointing to existing remote table with incomplete fields
     complete_table = SQLiteTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['sqlite'],
@@ -272,7 +272,7 @@ def test_table_flexibility():
 
     # create table with incomplete fields, pointing to existing remote table with complete fields
     completed_table = SQLiteTable(
-        name=table_name,
+        table_name=table_name,
         fields=incomplete_fields.copy(),
         primary_key='primary_key_field',
         **CREDENTIALS['sqlite'],
@@ -313,7 +313,7 @@ def test_records_where():
             cursor.execute(f'DROP TABLE {table_name};')
 
     table = SQLiteTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['sqlite'],
@@ -384,7 +384,7 @@ def test_field_reorder():
             cursor.execute(f'DROP TABLE {table_name};')
 
     table = SQLiteTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['sqlite'],
@@ -397,7 +397,7 @@ def test_field_reorder():
         test_fields = database_table_fields(cursor, table_name)
 
     reordered_table = SQLiteTable(
-        name=table_name,
+        table_name=table_name,
         fields=reordered_fields,
         primary_key='primary_key_field',
         **CREDENTIALS['sqlite'],
@@ -441,7 +441,7 @@ def test_nonexistent_field_in_inserted_record():
             cursor.execute(f'DROP TABLE {table_name};')
 
     table = SQLiteTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['sqlite'],
@@ -472,7 +472,7 @@ def test_missing_crs():
     }
 
     table = SQLiteTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         crs=None,
@@ -528,7 +528,7 @@ def test_records_intersecting_polygon():
             cursor.execute(f'DROP TABLE {table_name};')
 
     table = SQLiteTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         crs=crs,
