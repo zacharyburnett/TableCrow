@@ -1,8 +1,11 @@
 from ast import literal_eval
 from datetime import date, datetime
+from functools import lru_cache
 from logging import Logger
+from os import PathLike
+from pathlib import Path
 import sqlite3
-from sqlite3 import Cursor
+from sqlite3 import Connection, Cursor
 from typing import (
     Any,
     Mapping,
@@ -41,24 +44,40 @@ class SQLiteTable(DatabaseTable):
         'bytes': 'BLOB',
         **{geometry_type: geometry_type.upper() for geometry_type in GEOMETRY_TYPES},
     }
+    DEFAULT_PORT = None
 
     def __init__(
         self,
-        database: str,
-        name: str,
-        fields: {str: type},
+        path: PathLike,
+        table_name: str,
+        fields: {str: type} = None,
         primary_key: Union[str, Sequence[str]] = None,
         crs: CRS = None,
         logger: Logger = None,
     ):
+        if '://' not in path:
+            path = str(Path(path).expanduser().resolve())
+
         super().__init__(
-            database, name, fields, primary_key, crs, logger=logger,
+            resource=path,
+            table_name=table_name,
+            database=None,
+            fields=fields,
+            primary_key=primary_key,
+            crs=crs,
+            logger=logger,
         )
 
-        self.connection = sqlite3.connect(self.database)
-
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.database}/{self.name}')
+            raise ConnectionError(f'no connection to {self.resource}/{self.name}')
+
+        if self.fields is None:
+            with self.connection:
+                cursor = self.connection.cursor()
+                self._DatabaseTable__fields = database_table_fields(cursor, self.name)
+
+            if self.primary_key is None:
+                self._DatabaseTable__primary_key = list(self.fields)[0]
 
         if len(self.geometry_fields) > 0:
             self.connection.enable_load_extension(True)
@@ -148,10 +167,20 @@ class SQLiteTable(DatabaseTable):
                 cursor.execute(f'CREATE TABLE {self.name} ({self.schema});')
 
     @property
+    @lru_cache(maxsize=1)
+    def connection(self) -> Connection:
+        return sqlite3.connect(self.resource)
+
+    @property
+    def database(self) -> str:
+        return self.resource
+
+    @property
     def exists(self) -> bool:
-        with self.connection:
-            cursor = self.connection.cursor()
-            return database_has_table(cursor, self.name)
+        if self.connected:
+            with self.connection:
+                cursor = self.connection.cursor()
+                return database_has_table(cursor, self.name)
 
     @property
     def schema(self) -> str:
@@ -219,14 +248,17 @@ class SQLiteTable(DatabaseTable):
 
     @property
     def connected(self) -> bool:
-        with self.connection:
-            try:
-                cursor = self.connection.cursor()
-                cursor.execute('SELECT 1;')
-                cursor.fetchone()
-                return True
-            except:
-                return False
+        connected = False
+        if Path(self.resource).exists():
+            with self.connection:
+                try:
+                    cursor = self.connection.cursor()
+                    cursor.execute('SELECT 1;')
+                    cursor.fetchone()
+                    connected = True
+                except:
+                    connected = False
+        return connected
 
     def records_where(
         self, where: Union[Mapping[str, Any], str, Sequence[str]]
@@ -554,6 +586,18 @@ def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: A
     return record
 
 
+def database_tables(cursor: Cursor) -> [str]:
+    """
+    List tables within the given database.
+
+    :param cursor: sqlite3 cursor
+    :return: list of table names
+    """
+
+    cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table';")
+    return [record[0] for record in cursor.fetchall()]
+
+
 def database_has_table(cursor: Cursor, table: str) -> bool:
     """
     Whether the given table exists within the given database.
@@ -563,10 +607,7 @@ def database_has_table(cursor: Cursor, table: str) -> bool:
     :return: whether table exists
     """
 
-    cursor.execute(
-        f"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name=?);", [table],
-    )
-    return cursor.fetchone()[0]
+    return table in database_tables(cursor)
 
 
 def database_table_fields(cursor: Cursor, table: str) -> {str: str}:

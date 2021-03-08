@@ -6,8 +6,8 @@
 [![license](https://img.shields.io/github/license/zacharyburnett/tablecrow)](https://opensource.org/licenses/MIT)
 [![style](https://sourceforge.net/p/oitnb/code/ci/default/tree/_doc/_static/oitnb.svg?format=raw)](https://sourceforge.net/p/oitnb/code)
 
-`tablecrow` is an abstraction library over a generalized database table. Currently, `tablecrow` offers an abstraction for PostGreSQL and SQLite tables with
-simple PostGIS and SpatiaLite operations.
+`tablecrow` is an abstraction library over a generalized database table. Currently, `tablecrow` offers an abstraction for PostGreSQL and SQLite tables
+with simple PostGIS and SpatiaLite operations.
 
 ```bash
 pip install tablecrow
@@ -35,6 +35,24 @@ record = {'id': 1, 'polygon': Polygon([(-77.1, 39.65), (-77.1, 39.725), (-77.4, 
 
 ## Usage
 
+#### connect to an existing database
+
+```python
+import tablecrow
+
+# list all tables in a SQLite database file
+sqlite_tables = tablecrow.connect(
+    '~/test_database.db',
+)
+
+# connect to a pre-existing PostGres database table
+postgres_table = tablecrow.connect(
+    'user:password@https://test.com/database:5432',
+    database='postgres',
+    table_name='test_table',
+)
+```
+
 #### create a simple table (single primary key, no geometries)
 
 ```python
@@ -44,7 +62,7 @@ from tablecrow import PostGresTable
 table = PostGresTable(
     hostname='localhost:5432',
     database='postgres',
-    name='testing',
+    table_name='testing',
     fields={'id': int, 'time': datetime, 'length': float, 'name': str},
     primary_key='id',
     username='postgres',
@@ -86,8 +104,8 @@ from datetime import datetime
 from tablecrow import SQLiteTable
 
 table = SQLiteTable(
-    database='test_database.db',
-    name='testing',
+    path='test_database.db',
+    table_name='testing',
     fields={'id': int, 'time': datetime, 'length': float, 'name': str},
     primary_key=('id', 'name'),
 )
@@ -118,7 +136,7 @@ from tablecrow import PostGresTable
 table = PostGresTable(
     hostname='localhost:5432',
     database='postgres',
-    name='testing',
+    table_name='testing',
     fields={'id': int, 'polygon': Polygon, 'multipolygon': MultiPolygon},
     primary_key='id',
     username='postgres',

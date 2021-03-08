@@ -1,7 +1,8 @@
 from ast import literal_eval
 from datetime import date, datetime
-from functools import partial
+from functools import lru_cache, partial
 from logging import Logger
+from sqlite3 import Cursor
 from typing import (
     Any,
     Collection,
@@ -21,8 +22,8 @@ from sshtunnel import SSHTunnelForwarder
 from ..table import (
     DatabaseTable,
     random_open_tcp_port,
-    split_URL_port,
 )
+from ..utilities import parse_hostname, split_hostname_port
 
 SSH_DEFAULT_PORT = 22
 
@@ -47,74 +48,68 @@ class PostGresTable(DatabaseTable):
 
     def __init__(
         self,
-        database: str,
-        name: str,
-        fields: {str: type},
+        hostname: str,
+        table_name: str,
+        database: str = None,
+        fields: {str: type} = None,
         primary_key: Union[str, Sequence[str]] = None,
         crs: CRS = None,
-        hostname: str = None,
         username: str = None,
         password: str = None,
         users: [str] = None,
         logger: Logger = None,
         **kwargs,
     ):
-        super().__init__(
-            database,
-            name,
-            fields,
-            primary_key,
-            crs,
-            hostname,
-            username,
-            password,
-            users,
-            logger,
-        )
-
-        connector = partial(
-            psycopg2.connect,
-            database=self.database,
-            user=self.username,
-            password=self.password,
-        )
+        self.kwargs = kwargs
         if 'ssh_hostname' in kwargs and kwargs['ssh_hostname'] is not None:
-            ssh_hostname, ssh_port = split_URL_port(kwargs['ssh_hostname'])
+            credentials = parse_hostname(kwargs['ssh_hostname'])
+            ssh_hostname = credentials['hostname']
+            ssh_port = credentials['port']
             if ssh_port is None:
                 ssh_port = SSH_DEFAULT_PORT
 
-            if '@' in ssh_hostname:
-                ssh_username, ssh_hostname = ssh_hostname.split('@', 1)
-
             ssh_username = kwargs['ssh_username'] if 'ssh_username' in kwargs else None
-
-            if ssh_username is not None and ':' in ssh_username:
-                ssh_username, ssh_password = ssh_hostname.split(':', 1)
-
             ssh_password = kwargs['ssh_password'] if 'ssh_password' in kwargs else None
 
             self.tunnel = SSHTunnelForwarder(
                 (ssh_hostname, ssh_port),
                 ssh_username=ssh_username,
                 ssh_password=ssh_password,
-                remote_bind_address=('localhost', self.port),
+                remote_bind_address=('localhost', split_hostname_port(hostname)[-1]),
                 local_bind_address=('localhost', random_open_tcp_port()),
             )
             try:
                 self.tunnel.start()
             except Exception as error:
                 raise ConnectionError(error)
-            self.connection = connector(
-                host=self.tunnel.local_bind_host, port=self.tunnel.local_bind_port
-            )
         else:
             self.tunnel = None
-            self.connection = connector(host=self.hostname, port=self.port)
+
+        super().__init__(
+            resource=hostname,
+            table_name=table_name,
+            database=database,
+            fields=fields,
+            primary_key=primary_key,
+            crs=crs,
+            username=username,
+            password=password,
+            users=users,
+            logger=logger,
+        )
 
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
             )
+
+        if self.fields is None:
+            with self.connection:
+                with self.connection.cursor() as cursor:
+                    self._DatabaseTable__fields = database_table_fields(cursor, self.name)
+
+            if self.primary_key is None:
+                self._DatabaseTable__primary_key = list(self.fields)[0]
 
         with self.connection:
             with self.connection.cursor() as cursor:
@@ -203,6 +198,23 @@ class PostGresTable(DatabaseTable):
                         )
 
     @property
+    @lru_cache(maxsize=None)
+    def connection(self) -> psycopg2.connect:
+        connector = partial(
+            psycopg2.connect,
+            database=self.database,
+            user=self.username,
+            password=self.password,
+        )
+
+        if self.tunnel is not None:
+            connection = connector(host=self.tunnel.local_bind_host, port=self.tunnel.local_bind_port)
+        else:
+            connection = connector(host=self.resource, port=self.port)
+
+        return connection
+
+    @property
     def exists(self) -> bool:
         with self.connection:
             with self.connection.cursor() as cursor:
@@ -241,7 +253,7 @@ class PostGresTable(DatabaseTable):
     def remote_fields(self) -> {str: type}:
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
             )
 
         with self.connection:
@@ -298,7 +310,7 @@ class PostGresTable(DatabaseTable):
     ) -> [{str: Any}]:
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
             )
 
         where_clause, where_values = self.__where_clause(where)
@@ -371,7 +383,7 @@ class PostGresTable(DatabaseTable):
 
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
             )
 
         with self.connection:
@@ -461,7 +473,7 @@ class PostGresTable(DatabaseTable):
     def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
             )
 
         where_clause, where_values = self.__where_clause(where)
@@ -494,8 +506,9 @@ class PostGresTable(DatabaseTable):
     def __repr__(self) -> str:
         return (
             f'{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, {repr(self.fields)}, {repr(self.primary_key)}, '
-            f'{repr(self.hostname)}, {repr(self.crs.to_epsg()) if self.crs is not None else None}, '
-            f'{repr(self.username)}, {repr("*" * len(self.password))}, {repr(self.users)})'
+            f'{repr(self.resource)}, {repr(self.crs.to_epsg()) if self.crs is not None else None}, '
+            f'{repr(self.username)}, {repr("*" * len(self.password))}, {repr(self.users)}'
+            f'{", " if len(self.kwargs) > 0 else ""}{", ".join(key + "=" + repr(value) for key, value in self.kwargs.items())})'
         )
 
     def __del__(self):
@@ -614,6 +627,24 @@ def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: A
     return record
 
 
+def database_tables(cursor: Cursor, user_defined: bool = True) -> [str]:
+    """
+    List tables within the given database.
+
+    :param cursor: psycopg2 cursor
+    :return: list of table names
+    """
+
+    # query = "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
+    query = f"SELECT relname FROM pg_class WHERE relkind='r'"
+    if user_defined:
+        query += " AND relname !~ '^(pg_|sql_)'"
+    query += ";"
+
+    cursor.execute(query)
+    return [record[0] for record in cursor.fetchall()]
+
+
 def database_has_table(cursor: psycopg2._psycopg.cursor, table: str) -> bool:
     """
     Whether the given table exists within the given database.
@@ -624,7 +655,8 @@ def database_has_table(cursor: psycopg2._psycopg.cursor, table: str) -> bool:
     """
 
     cursor.execute(
-        f'SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name=%s);',
+        # f'SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name=%s);',
+        f'SELECT EXISTS(SELECT 1 FROM pg_class WHERE relname=%s);',
         [table.lower()],
     )
     return cursor.fetchone()[0]

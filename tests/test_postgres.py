@@ -9,13 +9,13 @@ from shapely.geometry import MultiPolygon, Point, box
 from sshtunnel import SSHTunnelForwarder
 
 from tablecrow import PostGresTable
-from tablecrow.table import DEFAULT_CRS, random_open_tcp_port, split_URL_port
+from tablecrow.table import DEFAULT_CRS, random_open_tcp_port
 from tablecrow.tables.postgres import (
     SSH_DEFAULT_PORT,
     database_has_table,
     database_table_fields,
 )
-from tablecrow.utilities import read_configuration, repository_root
+from tablecrow.utilities import read_configuration, repository_root, split_hostname_port
 
 CREDENTIALS_FILENAME = repository_root() / 'credentials.config'
 CREDENTIALS = read_configuration(CREDENTIALS_FILENAME)
@@ -41,11 +41,11 @@ if (
     'ssh_hostname' in CREDENTIALS['postgres']
     and CREDENTIALS['postgres']['ssh_hostname'] is not None
 ):
-    hostname, port = split_URL_port(CREDENTIALS['postgres']['hostname'])
+    hostname, port = split_hostname_port(CREDENTIALS['postgres']['hostname'])
     if port is None:
         port = PostGresTable.DEFAULT_PORT
 
-    ssh_hostname, ssh_port = split_URL_port(CREDENTIALS['postgres']['ssh_hostname'])
+    ssh_hostname, ssh_port = split_hostname_port(CREDENTIALS['postgres']['ssh_hostname'])
     if ssh_port is None:
         ssh_port = SSH_DEFAULT_PORT
 
@@ -73,7 +73,7 @@ else:
 
 @pytest.fixture
 def connection() -> psycopg2.connect:
-    hostname, port = split_URL_port(CREDENTIALS['postgres']['hostname'])
+    hostname, port = split_hostname_port(CREDENTIALS['postgres']['hostname'])
     if port is None:
         port = PostGresTable.DEFAULT_PORT
 
@@ -114,7 +114,7 @@ def test_table_creation(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['postgres'],
@@ -186,7 +186,7 @@ def test_compound_primary_key(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        name=table_name, fields=fields, primary_key=primary_key, **CREDENTIALS['postgres']
+        table_name=table_name, fields=fields, primary_key=primary_key, **CREDENTIALS['postgres']
     )
 
     test_primary_key = primary_key
@@ -242,7 +242,7 @@ def test_record_insertion(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['postgres'],
@@ -304,7 +304,7 @@ def test_table_flexibility(connection):
 
     # create table with incomplete fields
     incomplete_table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=incomplete_fields,
         primary_key='primary_key_field',
         **CREDENTIALS['postgres'],
@@ -318,7 +318,7 @@ def test_table_flexibility(connection):
 
     # create table with complete fields, pointing to existing remote table with incomplete fields
     complete_table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['postgres'],
@@ -331,7 +331,7 @@ def test_table_flexibility(connection):
 
     # create table with incomplete fields, pointing to existing remote table with complete fields
     completed_table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=incomplete_fields,
         primary_key='primary_key_field',
         **CREDENTIALS['postgres'],
@@ -370,7 +370,7 @@ def test_list_type(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['postgres'],
@@ -414,7 +414,7 @@ def test_records_where(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['postgres'],
@@ -485,7 +485,7 @@ def test_field_reorder(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['postgres'],
@@ -498,7 +498,7 @@ def test_field_reorder(connection):
             test_fields = database_table_fields(cursor, table_name)
 
     reordered_table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=reordered_fields,
         primary_key='primary_key_field',
         **CREDENTIALS['postgres'],
@@ -542,7 +542,7 @@ def test_nonexistent_field_in_inserted_record(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         **CREDENTIALS['postgres'],
@@ -572,7 +572,7 @@ def test_missing_crs(connection):
     }
 
     table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         crs=None,
@@ -628,7 +628,7 @@ def test_records_intersecting_polygon(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        name=table_name,
+        table_name=table_name,
         fields=fields,
         primary_key='primary_key_field',
         crs=crs,
