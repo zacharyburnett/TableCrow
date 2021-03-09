@@ -1,6 +1,7 @@
 from ast import literal_eval
 from datetime import date, datetime
 from functools import lru_cache, partial
+from getpass import getpass
 from logging import Logger
 from sqlite3 import Cursor
 from typing import (
@@ -55,12 +56,10 @@ class PostGresTable(DatabaseTable):
         primary_key: Union[str, Sequence[str]] = None,
         crs: CRS = None,
         username: str = None,
-        password: str = None,
         users: [str] = None,
         logger: Logger = None,
         **kwargs,
     ):
-        self.kwargs = kwargs
         if 'ssh_hostname' in kwargs and kwargs['ssh_hostname'] is not None:
             credentials = parse_hostname(kwargs['ssh_hostname'])
             ssh_hostname = credentials['hostname']
@@ -85,6 +84,18 @@ class PostGresTable(DatabaseTable):
         else:
             self.tunnel = None
 
+        password = None
+        if username is not None and ':' in username:
+            username, password = username.split(':', 1)
+        if 'password' in kwargs:
+            password = kwargs['password']
+        if password is None:
+            password = getpass()
+        self._DatabaseTable__password = password
+
+        if database is None:
+            database = 'postgres'
+
         super().__init__(
             resource=hostname,
             table_name=table_name,
@@ -100,7 +111,7 @@ class PostGresTable(DatabaseTable):
 
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
+                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
             )
 
         if self.fields is None:
@@ -196,6 +207,13 @@ class PostGresTable(DatabaseTable):
                         cursor.execute(
                             f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};'
                         )
+        if 'password' in kwargs:
+            kwargs['password'] = '*****'
+        self.kwargs = kwargs
+
+    @property
+    def hostname(self) -> str:
+        return self.resource
 
     @property
     @lru_cache(maxsize=None)
@@ -204,13 +222,13 @@ class PostGresTable(DatabaseTable):
             psycopg2.connect,
             database=self.database,
             user=self.username,
-            password=self.password,
+            password=self._DatabaseTable__password,
         )
 
         if self.tunnel is not None:
             connection = connector(host=self.tunnel.local_bind_host, port=self.tunnel.local_bind_port)
         else:
-            connection = connector(host=self.resource, port=self.port)
+            connection = connector(host=self.hostname, port=self.port)
 
         return connection
 
@@ -253,7 +271,7 @@ class PostGresTable(DatabaseTable):
     def remote_fields(self) -> {str: type}:
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
+                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
             )
 
         with self.connection:
@@ -310,7 +328,7 @@ class PostGresTable(DatabaseTable):
     ) -> [{str: Any}]:
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
+                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
             )
 
         where_clause, where_values = self.__where_clause(where)
@@ -383,7 +401,7 @@ class PostGresTable(DatabaseTable):
 
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
+                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
             )
 
         with self.connection:
@@ -473,7 +491,7 @@ class PostGresTable(DatabaseTable):
     def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
+                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
             )
 
         where_clause, where_values = self.__where_clause(where)
@@ -506,9 +524,10 @@ class PostGresTable(DatabaseTable):
     def __repr__(self) -> str:
         return (
             f'{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, {repr(self.fields)}, {repr(self.primary_key)}, '
-            f'{repr(self.resource)}, {repr(self.crs.to_epsg()) if self.crs is not None else None}, '
-            f'{repr(self.username)}, {repr("*" * len(self.password))}, {repr(self.users)}'
-            f'{", " if len(self.kwargs) > 0 else ""}{", ".join(key + "=" + repr(value) for key, value in self.kwargs.items())})'
+            f'{repr(self.hostname)}, {repr(self.crs.to_epsg()) if self.crs is not None else None}, '
+            f'{repr(self.username)}, {repr(self.users)}'
+            f'{", " if len(self.kwargs) > 0 else ""}'
+            f'{", ".join(key + "=" + repr(value) for key, value in self.kwargs.items())})'
         )
 
     def __del__(self):

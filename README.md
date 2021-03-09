@@ -45,7 +45,7 @@ sqlite_tables = tablecrow.connect(
     '~/test_database.db',
 )
 
-# connect to a pre-existing PostGres database table
+# connect to a PostGres database table
 postgres_table = tablecrow.connect(
     'user:password@https://test.com/database:5432',
     database='postgres',

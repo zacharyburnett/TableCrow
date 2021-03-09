@@ -69,7 +69,7 @@ class SQLiteTable(DatabaseTable):
         )
 
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.resource}/{self.name}')
+            raise ConnectionError(f'no connection to {self.path}/{self.name}')
 
         if self.fields is None:
             with self.connection:
@@ -168,12 +168,17 @@ class SQLiteTable(DatabaseTable):
 
     @property
     @lru_cache(maxsize=1)
+    def path(self) -> Path:
+        return Path(self.resource)
+
+    @property
+    @lru_cache(maxsize=1)
     def connection(self) -> Connection:
-        return sqlite3.connect(self.resource)
+        return sqlite3.connect(database=self.path)
 
     @property
     def database(self) -> str:
-        return self.resource
+        return str(self.path)
 
     @property
     def exists(self) -> bool:
@@ -249,7 +254,7 @@ class SQLiteTable(DatabaseTable):
     @property
     def connected(self) -> bool:
         connected = False
-        if Path(self.resource).exists():
+        if self.path.exists():
             with self.connection:
                 try:
                     cursor = self.connection.cursor()
