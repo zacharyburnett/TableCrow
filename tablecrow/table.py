@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 from logging import Logger
+from pathlib import Path
 import socket
 from typing import Any, Generator, Mapping, Sequence, Union
 
@@ -58,15 +59,18 @@ class DatabaseTable(ABC):
         self.logger = logger
 
         if resource is not None:
-            credentials = parse_hostname(resource)
-            resource = credentials['hostname']
-            port = credentials['port']
-            if port is None:
-                port = self.DEFAULT_PORT
-            if username is None:
-                username = credentials['username']
-            if password is None:
-                password = credentials['password']
+            if Path(resource).exists():
+                port = None
+            else:
+                credentials = parse_hostname(resource)
+                resource = credentials['hostname']
+                port = credentials['port']
+                if port is None:
+                    port = self.DEFAULT_PORT
+                if username is None:
+                    username = credentials['username']
+                if password is None:
+                    password = credentials['password']
         else:
             port = None
 
@@ -136,10 +140,6 @@ class DatabaseTable(ABC):
     @property
     def username(self) -> str:
         return self.__username
-
-    @property
-    def password(self) -> str:
-        return self.__password
 
     @property
     def users(self) -> [str]:

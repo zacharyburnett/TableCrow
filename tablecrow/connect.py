@@ -1,4 +1,5 @@
 from os import PathLike
+from pathlib import Path
 import sqlite3
 from typing import Union
 
@@ -7,6 +8,7 @@ import psycopg2
 from tablecrow.table import DatabaseTable
 from tablecrow.tables.postgres import PostGresTable, database_tables as postgres_database_tables
 from tablecrow.tables.sqlite import SQLiteTable, database_tables as sqlite_database_tables
+from tablecrow.utilities import parse_hostname
 
 DATABASE_FUNCTIONS = {
     'PostGres': {'connect': psycopg2.connect, 'table_names': postgres_database_tables, 'table': PostGresTable},
@@ -20,13 +22,36 @@ def connect(resource: Union[str, PathLike], table_names: [str] = None, **kwargs)
 
     database_type = None
     connection = None
-    for current_database_type, functions in DATABASE_FUNCTIONS.items():
+    messages = []
+
+    credentials = parse_hostname(resource)
+
+    database_types = list(DATABASE_FUNCTIONS)
+
+    path = Path(credentials['hostname']).expanduser()
+    if path.exists() or path.anchor != '':
+        resource = Path(resource).resolve().absolute()
+        database_types = ['SQLite']
+        credentials = {'database': credentials['hostname']}
+    else:
+        database_types.remove('SQLite')
+
+    for credential in credentials:
+        if credential in kwargs and kwargs[credential] is not None:
+            credentials[credential] = kwargs[credential]
+
+    for current_database_type in database_types:
         try:
-            connection = functions['connect'](str(resource))
+            current_credentials = credentials.copy()
+            if current_database_type == 'PostGres':
+                current_credentials['host'] = current_credentials['hostname']
+                current_credentials['user'] = current_credentials['username']
+                del current_credentials['hostname'], current_credentials['username']
+            connection = DATABASE_FUNCTIONS[current_database_type]['connect'](**current_credentials)
             database_type = current_database_type
             break
-        except:
-            pass
+        except Exception as error:
+            messages.append(f'{current_database_type} - {error.__class__.__name__}: {error}')
 
     if database_type is not None:
         functions = DATABASE_FUNCTIONS[database_type]
@@ -39,10 +64,8 @@ def connect(resource: Union[str, PathLike], table_names: [str] = None, **kwargs)
             table_names = set(table_names)
             return [functions['table'](resource, table_name=table_name, **kwargs) for table_name in table_names]
     else:
-        raise ConnectionError(f'could not connect to "{resource}" with {[functions["connect"] for functions in DATABASE_FUNCTIONS.values()]}')
-
-
-if __name__ == '__main__':
-    tables = connect('test_database.db', table_name='test_table', fields={'name': str, 'value': float})
-
-    print('done')
+        message = ''.join(messages)
+        raise ConnectionError(
+            f'could not connect to "{resource}" with {[functions["connect"].__module__ + "." + functions["connect"].__name__ for functions in DATABASE_FUNCTIONS.values()]}'
+            f'\n'
+            f'{message}')
