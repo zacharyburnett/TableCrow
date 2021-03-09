@@ -1,6 +1,7 @@
 import configparser
 from os import PathLike
 from pathlib import Path
+import re
 from typing import Union
 
 
@@ -54,8 +55,15 @@ def parse_hostname(hostname: str) -> {str: str}:
 
     hostname, port = split_hostname_port(hostname)
 
+    protocol_pattern = re.compile(r'^(?:http|ftp)s?://')
+    result = re.search(protocol_pattern, hostname)
+    protocol = result.group(0) if result is not None else ''
+    hostname = re.sub(protocol_pattern, '', hostname)
+
     if '@' in hostname:
         username, hostname = hostname.split('@', 1)
+
+    hostname = protocol + hostname
 
     if username is not None and ':' in username:
         username, password = username.split(':', 1)
