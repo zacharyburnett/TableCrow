@@ -70,11 +70,15 @@ class PostGresTable(DatabaseTable):
             ssh_username = kwargs['ssh_username'] if 'ssh_username' in kwargs else None
             ssh_password = kwargs['ssh_password'] if 'ssh_password' in kwargs else None
 
+            port = split_hostname_port(hostname)[-1]
+            if port is None:
+                port = self.DEFAULT_PORT
+
             self.tunnel = SSHTunnelForwarder(
                 (ssh_hostname, ssh_port),
                 ssh_username=ssh_username,
                 ssh_password=ssh_password,
-                remote_bind_address=('localhost', split_hostname_port(hostname)[-1]),
+                remote_bind_address=('localhost', port),
                 local_bind_address=('localhost', random_open_tcp_port()),
             )
             try:
