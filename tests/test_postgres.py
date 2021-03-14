@@ -186,7 +186,10 @@ def test_compound_primary_key(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        table_name=table_name, fields=fields, primary_key=primary_key, **CREDENTIALS['postgres']
+        table_name=table_name,
+        fields=fields,
+        primary_key=primary_key,
+        **CREDENTIALS['postgres'],
     )
 
     test_primary_key = primary_key
@@ -477,7 +480,14 @@ def test_field_reorder(connection):
         'field_3': str,
     }
 
-    records = [{'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1', 'field_4': date(2020, 1, 2)}]
+    records = [
+        {
+            'primary_key_field': 1,
+            'field_1': datetime(2020, 1, 1),
+            'field_3': 'test 1',
+            'field_4': date(2020, 1, 2),
+        }
+    ]
 
     with connection:
         with connection.cursor() as cursor:

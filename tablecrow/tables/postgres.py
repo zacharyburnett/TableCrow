@@ -196,7 +196,9 @@ class PostGresTable(DatabaseTable):
                                     f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};'
                                 )
 
-                            copy_table_fields = list(database_table_fields(cursor, copy_table_name))
+                            copy_table_fields = list(
+                                database_table_fields(cursor, copy_table_name)
+                            )
 
                             cursor.execute(
                                 f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) SELECT {", ".join(copy_table_fields)} FROM {copy_table_name};'
@@ -230,7 +232,9 @@ class PostGresTable(DatabaseTable):
         )
 
         if self.tunnel is not None:
-            connection = connector(host=self.tunnel.local_bind_host, port=self.tunnel.local_bind_port)
+            connection = connector(
+                host=self.tunnel.local_bind_host, port=self.tunnel.local_bind_port
+            )
         else:
             connection = connector(host=self.hostname, port=self.port)
 
@@ -662,7 +666,7 @@ def database_tables(cursor: Cursor, user_defined: bool = True) -> [str]:
     query = f"SELECT relname FROM pg_class WHERE relkind='r'"
     if user_defined:
         query += " AND relname !~ '^(pg_|sql_)'"
-    query += ";"
+    query += ';'
 
     cursor.execute(query)
     return [record[0] for record in cursor.fetchall()]

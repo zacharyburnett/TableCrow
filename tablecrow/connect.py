@@ -6,17 +6,30 @@ from typing import Union
 import psycopg2
 
 from tablecrow.table import DatabaseTable
-from tablecrow.tables.postgres import PostGresTable, database_tables as postgres_database_tables
+from tablecrow.tables.postgres import (
+    PostGresTable,
+    database_tables as postgres_database_tables,
+)
 from tablecrow.tables.sqlite import SQLiteTable, database_tables as sqlite_database_tables
 from tablecrow.utilities import parse_hostname
 
 DATABASE_FUNCTIONS = {
-    'PostGres': {'connect': psycopg2.connect, 'table_names': postgres_database_tables, 'table': PostGresTable},
-    'SQLite': {'connect': sqlite3.connect, 'table_names': sqlite_database_tables, 'table': SQLiteTable}
+    'PostGres': {
+        'connect': psycopg2.connect,
+        'table_names': postgres_database_tables,
+        'table': PostGresTable,
+    },
+    'SQLite': {
+        'connect': sqlite3.connect,
+        'table_names': sqlite_database_tables,
+        'table': SQLiteTable,
+    },
 }
 
 
-def connect(resource: Union[str, PathLike], table_names: [str] = None, **kwargs) -> [DatabaseTable]:
+def connect(
+    resource: Union[str, PathLike], table_names: [str] = None, **kwargs
+) -> [DatabaseTable]:
     if table_names is None:
         table_names = []
 
@@ -47,7 +60,9 @@ def connect(resource: Union[str, PathLike], table_names: [str] = None, **kwargs)
                 current_credentials['host'] = current_credentials['hostname']
                 current_credentials['user'] = current_credentials['username']
                 del current_credentials['hostname'], current_credentials['username']
-            connection = DATABASE_FUNCTIONS[current_database_type]['connect'](**current_credentials)
+            connection = DATABASE_FUNCTIONS[current_database_type]['connect'](
+                **current_credentials
+            )
             database_type = current_database_type
             break
         except Exception as error:
@@ -62,10 +77,14 @@ def connect(resource: Union[str, PathLike], table_names: [str] = None, **kwargs)
                 table_names.append(kwargs['table_name'])
                 del kwargs['table_name']
             table_names = set(table_names)
-            return [functions['table'](resource, table_name=table_name, **kwargs) for table_name in table_names]
+            return [
+                functions['table'](resource, table_name=table_name, **kwargs)
+                for table_name in table_names
+            ]
     else:
         message = ''.join(messages)
         raise ConnectionError(
             f'could not connect to "{resource}" with {[functions["connect"].__module__ + "." + functions["connect"].__name__ for functions in DATABASE_FUNCTIONS.values()]}'
             f'\n'
-            f'{message}')
+            f'{message}'
+        )
