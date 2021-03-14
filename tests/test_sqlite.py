@@ -165,8 +165,18 @@ def test_record_insertion():
     }
 
     records = [
-        {'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1', 'field_4': None},
-        {'primary_key_field': 2, 'field_1': datetime(2020, 1, 2), 'field_2': 5.67, 'field_4': True},
+        {
+            'primary_key_field': 1,
+            'field_1': datetime(2020, 1, 1),
+            'field_3': 'test 1',
+            'field_4': None,
+        },
+        {
+            'primary_key_field': 2,
+            'field_1': datetime(2020, 1, 2),
+            'field_2': 5.67,
+            'field_4': True,
+        },
     ]
 
     extra_record = {
@@ -376,7 +386,14 @@ def test_field_reorder():
         'field_3': str,
     }
 
-    records = [{'primary_key_field': 1, 'field_1': datetime(2020, 1, 1), 'field_3': 'test 1', 'field_4': date(2020, 1, 2)}]
+    records = [
+        {
+            'primary_key_field': 1,
+            'field_1': datetime(2020, 1, 1),
+            'field_3': 'test 1',
+            'field_4': date(2020, 1, 2),
+        }
+    ]
 
     with sqlite_connection() as connection:
         cursor = connection.cursor()

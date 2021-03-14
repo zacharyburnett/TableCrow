@@ -94,7 +94,9 @@ class DatabaseTable(ABC):
             crs = parse_crs(crs)
         elif len(self.geometry_fields) > 0:
             crs = DEFAULT_CRS
-            self.logger.warning(f'no CRS provided for geometry fields; defaulting to EPSG:{crs.to_epsg()}')
+            self.logger.warning(
+                f'no CRS provided for geometry fields; defaulting to EPSG:{crs.to_epsg()}'
+            )
         else:
             crs = None
         self.__crs = crs
@@ -105,7 +107,9 @@ class DatabaseTable(ABC):
         self.__users = users
 
         if self.fields is None and not self.exists:
-            raise TableNotFoundError(f'fields must be specified when creating a table; table does not exist at "{self.database}:{self.name}"')
+            raise TableNotFoundError(
+                f'fields must be specified when creating a table; table does not exist at "{self.database}:{self.name}"'
+            )
 
     @property
     def resource(self) -> str:
