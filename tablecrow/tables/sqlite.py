@@ -55,7 +55,7 @@ class SQLiteTable(DatabaseTable):
         crs: CRS = None,
         logger: Logger = None,
     ):
-        if '://' not in path:
+        if '://' not in str(path):
             path = str(Path(path).expanduser().resolve())
 
         super().__init__(
