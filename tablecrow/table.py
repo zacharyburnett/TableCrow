@@ -9,7 +9,7 @@ from pyproj import CRS
 from shapely.geometry import LinearRing, MultiPolygon, Polygon
 from shapely.geometry.base import BaseGeometry, GEOMETRY_TYPES
 
-from tablecrow.utilities import parse_hostname
+from tablecrow.utilities import get_logger, parse_hostname
 
 DEFAULT_CRS = CRS.from_epsg(4326)
 
@@ -54,7 +54,7 @@ class DatabaseTable(ABC):
         self.__fields = fields
 
         if logger is None:
-            logger = logging.getLogger('dummy')
+            logger = get_logger('dummy', console_level=logging.NOTSET)
 
         self.logger = logger
 
