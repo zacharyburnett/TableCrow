@@ -1,6 +1,7 @@
 # TableCrow
 
 [![tests](https://github.com/zacharyburnett/TableCrow/workflows/tests/badge.svg)](https://github.com/zacharyburnett/TableCrow/actions?query=workflow%3Atests)
+[![codecov](https://codecov.io/gh/zacharyburnett/tablecrow/branch/master/graph/badge.svg?token=FCJ2HXV0K6)](https://codecov.io/gh/zacharyburnett/tablecrow)
 [![build](https://github.com/zacharyburnett/TableCrow/workflows/build/badge.svg)](https://github.com/zacharyburnett/TableCrow/actions?query=workflow%3Abuild)
 [![version](https://img.shields.io/pypi/v/tablecrow)](https://pypi.org/project/tablecrow)
 [![license](https://img.shields.io/github/license/zacharyburnett/tablecrow)](https://opensource.org/licenses/MIT)
