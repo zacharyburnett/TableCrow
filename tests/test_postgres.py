@@ -9,7 +9,7 @@ from shapely.geometry import MultiPolygon, Point, box
 from sshtunnel import SSHTunnelForwarder
 
 from tablecrow import PostGresTable
-from tablecrow.table import DEFAULT_CRS, random_open_tcp_port
+from tablecrow.tables.base import DEFAULT_CRS, random_open_tcp_port
 from tablecrow.tables.postgres import (
     SSH_DEFAULT_PORT,
     database_has_table,
@@ -364,7 +364,7 @@ def test_list_type(connection):
     records = [
         {'primary_key_field': 1, 'field_1': ['test 1', 'test 2']},
         {'primary_key_field': 2, 'field_1': ['test 3', 'test 1']},
-        {'primary_key_field': 3, 'field_2': ['test 1', 'test 2']},
+        {'primary_key_field': 3, 'field_2': ('test 1', 'test 2')},
     ]
 
     with connection:
@@ -390,9 +390,9 @@ def test_list_type(connection):
         with connection.cursor() as cursor:
             cursor.execute(f'DROP TABLE {table_name};')
 
-    records[0]['field_2'] = None
-    records[1]['field_2'] = None
-    records[2]['field_1'] = None
+    records[0]['field_2'] = ()
+    records[1]['field_2'] = ()
+    records[2]['field_1'] = []
 
     assert test_records == records
     assert test_record_query_1 == records[:2]

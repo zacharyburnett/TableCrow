@@ -7,7 +7,7 @@ import pytest
 from shapely.geometry import MultiPolygon, Point, box
 
 from tablecrow import SQLiteTable
-from tablecrow.table import DEFAULT_CRS
+from tablecrow.tables.base import DEFAULT_CRS
 from tablecrow.tables.sqlite import (
     database_has_table,
     database_table_fields,

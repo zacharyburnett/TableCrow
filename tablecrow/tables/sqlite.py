@@ -1,4 +1,3 @@
-from ast import literal_eval
 from datetime import date, datetime
 from functools import lru_cache
 from logging import Logger
@@ -14,11 +13,9 @@ from typing import (
 )
 
 from pyproj import CRS
-from shapely import wkb, wkt
-from shapely.geometry import shape as shapely_shape
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 
-from ..table import DatabaseTable
+from tablecrow.tables.base import DatabaseTable, parse_record_values
 
 SSH_DEFAULT_PORT = 22
 
@@ -542,53 +539,6 @@ class SQLiteTable(DatabaseTable):
                 where_values = None
 
         return where_clause, where_values
-
-
-def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: Any}:
-    """
-    Parse the values in the given record into their respective field types.
-
-    :param record: dictionary mapping fields to values
-    :param field_types: dictionary mapping fields to types
-    :return: record with values parsed into their respective types
-    """
-
-    for field, value in record.items():
-        if field in field_types:
-            field_type = field_types[field]
-            value_type = type(value)
-
-            if value_type is not field_type and value is not None:
-                if field_type is bool:
-                    value = (
-                        bool(value)
-                        if value_type is not str
-                        else literal_eval(value.capitalize())
-                    )
-                elif field_type is int:
-                    value = int(value)
-                elif field_type is float:
-                    value = float(value)
-                elif field_type is str:
-                    value = str(value)
-                elif value_type in (str, bytes):
-                    if field_type is datetime:
-                        value = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
-                    elif field_type is date:
-                        value = datetime.strptime(value, '%Y-%m-%d').date()
-                    elif field_type.__name__ in GEOMETRY_TYPES:
-                        try:
-                            value = wkb.loads(value, hex=True)
-                        except:
-                            try:
-                                value = wkt.loads(value)
-                            except:
-                                try:
-                                    value = wkb.loads(value)
-                                except TypeError:
-                                    value = shapely_shape(literal_eval(value))
-                record[field] = value
-    return record
 
 
 def database_tables(cursor: Cursor) -> [str]:

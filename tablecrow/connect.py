@@ -5,7 +5,7 @@ from typing import Union
 
 import psycopg2
 
-from tablecrow.table import DatabaseTable
+from tablecrow.tables.base import DatabaseTable
 from tablecrow.tables.postgres import (
     PostGresTable,
     database_tables as postgres_database_tables,

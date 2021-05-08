@@ -179,7 +179,7 @@ to write your own custom table interface, extend `DatabaseTable`:
 
 ```python
 from typing import Any, Mapping, Sequence, Union
-from tablecrow.table import DatabaseTable
+from tablecrow.tables.base import DatabaseTable
 
 
 class CustomDatabaseTable(DatabaseTable):

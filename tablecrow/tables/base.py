@@ -9,7 +9,7 @@ from pyproj import CRS
 from shapely.geometry import LinearRing, MultiPolygon, Polygon
 from shapely.geometry.base import BaseGeometry, GEOMETRY_TYPES
 
-from tablecrow.utilities import get_logger, parse_hostname
+from tablecrow.utilities import convert_value, get_logger, parse_hostname
 
 DEFAULT_CRS = CRS.from_epsg(4326)
 
@@ -478,3 +478,19 @@ def flatten_geometry(geometry: BaseGeometry) -> BaseGeometry:
     if not geometry.is_valid:
         geometry = geometry.buffer(0)
     return geometry
+
+
+def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: Any}:
+    """
+    Parse the values in the given record into their respective field types.
+
+    :param record: dictionary mapping fields to values
+    :param field_types: dictionary mapping fields to types
+    :return: record with values parsed into their respective types
+    """
+
+    for field, value in record.items():
+        if field in field_types:
+            field_type = field_types[field]
+            record[field] = convert_value(value, field_type)
+    return record
