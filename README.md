@@ -231,5 +231,5 @@ class CustomDatabaseTable(DatabaseTable):
 
 The original core code and methodology of `tablecrow` was developed for the National Bathymetric Source project under
 the [Office of Coast Survey of the National Oceanic and Atmospheric Administration (NOAA)](https://nauticalcharts.noaa.gov), a part of the United
-States Department of Commerce, by [Glen Rice](https://github.com/glenrice-noaa), [Casiano Koprowski](https://github.com/Casiano-Koprowski),
-and [Zachary Burnett](https://github.com/zacharyburnett).
+States Department of Commerce, by [@glenrice-noaa](https://github.com/glenrice-noaa), [@Casiano-Koprowski](https://github.com/Casiano-Koprowski),
+and [@zacharyburnett](https://github.com/zacharyburnett).
