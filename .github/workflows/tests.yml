@@ -37,6 +37,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install wheel
+          pip install flake8
           pip install -e .[testing]
           sudo apt install libsqlite3-mod-spatialite
           sudo ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite

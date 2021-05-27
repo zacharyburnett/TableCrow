@@ -405,7 +405,7 @@ def split_compound_crs(crs: CRS) -> [CRS]:
 
                 if opening_brackets > 0 and opening_brackets == closing_brackets:
                     wkts.append(working_string[: index + 1])
-                    working_string = working_string[index + 2:]
+                    working_string = working_string[index + 2 :]
                     break
             else:
                 wkts.append(working_string)

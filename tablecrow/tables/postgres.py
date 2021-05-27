@@ -3,25 +3,17 @@ from functools import lru_cache, partial
 from getpass import getpass
 from logging import Logger
 from sqlite3 import Cursor
-from typing import (
-    Any,
-    Collection,
-    Mapping,
-    Sequence,
-    Union,
-    get_args as typing_get_args,
-)
+from typing import Any, Collection
+from typing import Mapping, Sequence, Union
+from typing import get_args as typing_get_args
 
 import psycopg2
 from pyproj import CRS
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry, GEOMETRY_TYPES
 from sshtunnel import SSHTunnelForwarder
 
-from tablecrow.tables.base import (
-    DatabaseTable,
-    parse_record_values,
-    random_open_tcp_port,
-)
+from tablecrow.tables.base import DatabaseTable, parse_record_values, random_open_tcp_port
+
 from ..utilities import parse_hostname, split_hostname_port
 
 SSH_DEFAULT_PORT = 22

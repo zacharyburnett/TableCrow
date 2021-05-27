@@ -5,12 +5,7 @@ from os import PathLike
 from pathlib import Path
 import sqlite3
 from sqlite3 import Connection, Cursor
-from typing import (
-    Any,
-    Mapping,
-    Sequence,
-    Union,
-)
+from typing import Any, Mapping, Sequence, Union
 
 from pyproj import CRS
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
@@ -418,7 +413,7 @@ class SQLiteTable(DatabaseTable):
                             f'UPDATE {self.name} '
                             f'SET ({", ".join(record_without_primary_key.keys())}) = ({", ".join("?" for _ in record_without_primary_key)})'
                             f' WHERE {primary_key_string} = ({", ".join("?" for _ in primary_key_value)});',
-                            [*record_without_primary_key.values(), *primary_key_value, ],
+                            [*record_without_primary_key.values(), *primary_key_value,],
                         )
                 else:
                     cursor.execute(
