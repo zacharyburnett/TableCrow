@@ -33,7 +33,7 @@ setup(
         'sshtunnel',
     ],
     extras_require={
-        'testing': ['flake8', 'pytest', 'pytest-cov', 'pytest-xdist'],
-        'development': ['oitnb'],
+        'testing': ['pytest', 'pytest-cov', 'pytest-xdist'],
+        'development': ['flake8', 'isort', 'oitnb'],
     },
 )
