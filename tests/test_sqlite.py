@@ -4,14 +4,11 @@ import sqlite3
 
 from pyproj import CRS
 import pytest
-from shapely.geometry import MultiPolygon, Point, box
+from shapely.geometry import box, MultiPolygon, Point
 
 from tablecrow import SQLiteTable
 from tablecrow.tables.base import DEFAULT_CRS
-from tablecrow.tables.sqlite import (
-    database_has_table,
-    database_table_fields,
-)
+from tablecrow.tables.sqlite import database_has_table, database_table_fields
 from tablecrow.utilities import read_configuration, repository_root
 
 CREDENTIALS_FILENAME = repository_root() / 'credentials.config'

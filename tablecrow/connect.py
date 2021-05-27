@@ -6,11 +6,10 @@ from typing import Union
 import psycopg2
 
 from tablecrow.tables.base import DatabaseTable
-from tablecrow.tables.postgres import (
-    PostGresTable,
-    database_tables as postgres_database_tables,
-)
-from tablecrow.tables.sqlite import SQLiteTable, database_tables as sqlite_database_tables
+from tablecrow.tables.postgres import PostGresTable
+from tablecrow.tables.postgres import database_tables as postgres_database_tables
+from tablecrow.tables.sqlite import SQLiteTable
+from tablecrow.tables.sqlite import database_tables as sqlite_database_tables
 from tablecrow.utilities import parse_hostname
 
 DATABASE_FUNCTIONS = {

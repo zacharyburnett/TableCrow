@@ -4,8 +4,8 @@ from setuptools import config, find_packages, setup
 try:
     from dunamai import Version
 except ImportError:
-    import sys
     import subprocess
+    import sys
 
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'dunamai'])
     from dunamai import Version

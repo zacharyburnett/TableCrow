@@ -5,15 +5,15 @@ import os
 import psycopg2
 from pyproj import CRS
 import pytest
-from shapely.geometry import MultiPolygon, Point, box
+from shapely.geometry import box, MultiPolygon, Point
 from sshtunnel import SSHTunnelForwarder
 
 from tablecrow import PostGresTable
 from tablecrow.tables.base import DEFAULT_CRS, random_open_tcp_port
 from tablecrow.tables.postgres import (
-    SSH_DEFAULT_PORT,
     database_has_table,
     database_table_fields,
+    SSH_DEFAULT_PORT,
 )
 from tablecrow.utilities import read_configuration, repository_root, split_hostname_port
 
