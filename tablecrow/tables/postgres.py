@@ -8,6 +8,7 @@ from typing import Mapping, Sequence, Union
 from typing import get_args as typing_get_args
 
 import psycopg2
+from psycopg2._psycopg import connection
 from pyproj import CRS
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry, GEOMETRY_TYPES
 from sshtunnel import SSHTunnelForwarder
@@ -109,15 +110,16 @@ class PostGresTable(DatabaseTable):
             )
 
         if self.fields is None:
-            with self.connection:
-                with self.connection.cursor() as cursor:
+            with self.connection as connection:
+                with connection.cursor() as cursor:
                     self._DatabaseTable__fields = database_table_fields(cursor, self.name)
+            connection.close()
 
             if self.primary_key is None:
                 self._DatabaseTable__primary_key = list(self.fields)[0]
 
-        with self.connection:
-            with self.connection.cursor() as cursor:
+        with self.connection as connection:
+            with connection.cursor() as cursor:
                 if database_has_table(cursor, self.name):
                     if database_table_is_inherited(cursor, self.name):
                         raise RuntimeError(
@@ -203,6 +205,7 @@ class PostGresTable(DatabaseTable):
                         cursor.execute(
                             f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};'
                         )
+        connection.close()
         if 'password' in kwargs:
             kwargs['password'] = '*****'
         self.kwargs = kwargs
@@ -212,8 +215,7 @@ class PostGresTable(DatabaseTable):
         return self.resource
 
     @property
-    @lru_cache(maxsize=None)
-    def connection(self) -> psycopg2.connect:
+    def connection(self) -> connection:
         connector = partial(
             psycopg2.connect,
             database=self.database,
@@ -232,9 +234,11 @@ class PostGresTable(DatabaseTable):
 
     @property
     def exists(self) -> bool:
-        with self.connection:
-            with self.connection.cursor() as cursor:
-                return database_has_table(cursor, self.name)
+        with self.connection as connection:
+            with connection.cursor() as cursor:
+                exists = database_has_table(cursor, self.name)
+        connection.close()
+        return exists
 
     @property
     def schema(self) -> str:
@@ -272,8 +276,9 @@ class PostGresTable(DatabaseTable):
                 f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
             )
 
-        with self.connection:
-            with self.connection.cursor() as cursor:
+        fields = None
+        with self.connection as connection:
+            with connection.cursor() as cursor:
                 if database_has_table(cursor, self.name):
                     fields = database_table_fields(cursor, self.name)
 
@@ -307,19 +312,22 @@ class PostGresTable(DatabaseTable):
                         fields[field] = field_type
                 else:
                     fields = None
+        connection.close()
 
-                return fields
+        return fields
 
     @property
     def connected(self) -> bool:
-        with self.connection:
+        with self.connection as connection:
             try:
-                with self.connection.cursor() as cursor:
+                with connection.cursor() as cursor:
                     cursor.execute('SELECT 1;')
                     cursor.fetchone()
-                return True
+                connected = True
             except:
-                return False
+                connected = False
+        connection.close()
+        return connected
 
     def records_where(
         self, where: Union[Mapping[str, Any], str, Sequence[str]]
@@ -331,8 +339,8 @@ class PostGresTable(DatabaseTable):
 
         where_clause, where_values = self.__where_clause(where)
 
-        with self.connection:
-            with self.connection.cursor() as cursor:
+        with self.connection as connection:
+            with connection.cursor() as cursor:
                 if where_clause is None:
                     cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.name};')
                 else:
@@ -345,6 +353,7 @@ class PostGresTable(DatabaseTable):
                     except psycopg2.errors.SyntaxError as error:
                         raise SyntaxError(f'invalid SQL syntax - {error}')
                 matching_records = cursor.fetchall()
+        connection.close()
 
         matching_records = [
             parse_record_values(dict(zip(self.fields.keys(), record)), self.fields)
@@ -376,12 +385,13 @@ class PostGresTable(DatabaseTable):
             where_clause.append(f'ST_Intersects({field}, {geometry_string})')
         where_clause = ' OR '.join(where_clause)
 
-        with self.connection:
-            with self.connection.cursor() as cursor:
+        with self.connection as connection:
+            with connection.cursor() as cursor:
                 cursor.execute(
                     f'SELECT * FROM {self.name} WHERE {where_clause};', where_values
                 )
                 records = cursor.fetchall()
+        connection.close()
 
         return [
             parse_record_values(dict(zip(self.fields.keys(), record)), self.fields)
@@ -402,8 +412,8 @@ class PostGresTable(DatabaseTable):
                 f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
             )
 
-        with self.connection:
-            with self.connection.cursor() as cursor:
+        with self.connection as connection:
+            with connection.cursor() as cursor:
                 for record in records:
                     if len(self.primary_key) == 1:
                         primary_key_string = self.primary_key[0]
@@ -491,6 +501,7 @@ class PostGresTable(DatabaseTable):
                                 f'WHERE {primary_key_string} = %s;',
                                 [geometry.wkt, self.crs.to_epsg(), primary_key_value],
                             )
+        connection.close()
 
     def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
         if not self.connected:
@@ -500,8 +511,8 @@ class PostGresTable(DatabaseTable):
 
         where_clause, where_values = self.__where_clause(where)
 
-        with self.connection:
-            with self.connection.cursor() as cursor:
+        with self.connection as connection:
+            with connection.cursor() as cursor:
                 if where_clause is None:
                     cursor.execute(f'TRUNCATE {self.name};')
                 else:
@@ -513,17 +524,21 @@ class PostGresTable(DatabaseTable):
                         raise KeyError(error)
                     except psycopg2.errors.SyntaxError as error:
                         raise SyntaxError(f'invalid SQL syntax - {error}')
+        connection.close()
 
     def __len__(self) -> int:
-        with self.connection:
-            with self.connection.cursor() as cursor:
+        with self.connection as connection:
+            with connection.cursor() as cursor:
                 cursor.execute(f'SELECT COUNT(*) FROM {self.name};')
-                return cursor.fetchone()[0]
+                length = cursor.fetchone()[0]
+        connection.close()
+        return length
 
     def delete_table(self):
-        with self.connection:
-            with self.connection.cursor() as cursor:
+        with self.connection as connection:
+            with connection.cursor() as cursor:
                 cursor.execute(f'DROP TABLE {self.name};')
+        connection.close()
 
     def __repr__(self) -> str:
         return (
@@ -569,9 +584,10 @@ class PostGresTable(DatabaseTable):
                                 statement = f'%s = ANY({field})'
                             else:
                                 if fields is None:
-                                    with self.connection:
-                                        with self.connection.cursor() as cursor:
+                                    with self.connection as connection:
+                                        with connection.cursor() as cursor:
                                             fields = database_table_fields(cursor, self.name)
+                                    connection.close()
                                 field_type = fields[field]
                                 dimensions = field_type.count('_')
                                 field_type = field_type.strip('_')
