@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from functools import lru_cache, partial
+from functools import partial
 from getpass import getpass
 from logging import Logger
 from sqlite3 import Cursor
@@ -51,6 +51,8 @@ class PostGresTable(DatabaseTable):
         logger: Logger = None,
         **kwargs,
     ):
+        self.tunnel_credentials = {}
+
         if 'ssh_hostname' in kwargs and kwargs['ssh_hostname'] is not None:
             credentials = parse_hostname(kwargs['ssh_hostname'])
             ssh_hostname = credentials['hostname']
@@ -61,23 +63,10 @@ class PostGresTable(DatabaseTable):
             ssh_username = kwargs['ssh_username'] if 'ssh_username' in kwargs else None
             ssh_password = kwargs['ssh_password'] if 'ssh_password' in kwargs else None
 
-            port = split_hostname_port(hostname)[-1]
-            if port is None:
-                port = self.DEFAULT_PORT
-
-            self.tunnel = SSHTunnelForwarder(
-                (ssh_hostname, ssh_port),
-                ssh_username=ssh_username,
-                ssh_password=ssh_password,
-                remote_bind_address=('localhost', port),
-                local_bind_address=('localhost', random_open_tcp_port()),
-            )
-            try:
-                self.tunnel.start()
-            except Exception as error:
-                raise ConnectionError(error)
-        else:
-            self.tunnel = None
+            self.tunnel_credentials['ssh_hostname'] = ssh_hostname
+            self.tunnel_credentials['ssh_port'] = ssh_port
+            self.tunnel_credentials['ssh_username'] = ssh_username
+            self.tunnel_credentials['ssh_password'] = ssh_password
 
         password = None
         if username is not None and ':' in username:
@@ -215,6 +204,27 @@ class PostGresTable(DatabaseTable):
         return self.resource
 
     @property
+    def tunnel(self) -> SSHTunnelForwarder:
+        if 'ssh_hostname' in self.tunnel_credentials:
+            port = split_hostname_port(self.resource)[-1]
+            if port is None:
+                port = self.DEFAULT_PORT
+            tunnel = SSHTunnelForwarder(
+                (self.tunnel_credentials['ssh_hostname'], self.tunnel_credentials['ssh_port']),
+                ssh_username=self.tunnel_credentials['ssh_username'],
+                ssh_password=self.tunnel_credentials['ssh_password'],
+                remote_bind_address=('localhost', port),
+                local_bind_address=('localhost', random_open_tcp_port()),
+            )
+            try:
+                tunnel.start()
+            except Exception as error:
+                raise ConnectionError(error)
+        else:
+            tunnel = None
+        return tunnel
+
+    @property
     def connection(self) -> connection:
         connector = partial(
             psycopg2.connect,
@@ -223,10 +233,9 @@ class PostGresTable(DatabaseTable):
             password=self._DatabaseTable__password,
         )
 
-        if self.tunnel is not None:
-            connection = connector(
-                host=self.tunnel.local_bind_host, port=self.tunnel.local_bind_port
-            )
+        tunnel = self.tunnel
+        if tunnel is not None:
+            connection = connector(host=tunnel.local_bind_host, port=tunnel.local_bind_port)
         else:
             connection = connector(host=self.hostname, port=self.port)
 
@@ -548,10 +557,6 @@ class PostGresTable(DatabaseTable):
             f'{", " if len(self.kwargs) > 0 else ""}'
             f'{", ".join(key + "=" + repr(value) for key, value in self.kwargs.items())})'
         )
-
-    def __del__(self):
-        if self.tunnel is not None:
-            self.tunnel.stop()
 
     def __where_clause(self, where: {str: Union[Any, list]}) -> (str, [Any]):
         if (
