@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TableCrow &mdash; tablecrow 1.4.0-post.1+11bd5d6 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <title>TableCrow &mdash; tablecrow 1.4.0.post9.dev0+452775b documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -35,7 +36,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p><span class="caption-text">Reference</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">tablecrow</a></li>
 </ul>
@@ -65,7 +66,7 @@
            <div itemprop="articleBody">
              
   <section id="tablecrow">
-<h1>TableCrow<a class="headerlink" href="#tablecrow" title="Permalink to this headline">¶</a></h1>
+<h1>TableCrow<a class="headerlink" href="#tablecrow" title="Permalink to this headline"></a></h1>
 <a class="reference external image-reference" href="https://github.com/zacharyburnett/TableCrow/actions?query=workflow%3Atests"><img alt="tests" src="https://github.com/zacharyburnett/TableCrow/workflows/tests/badge.svg" /></a>
 <a class="reference external image-reference" href="https://codecov.io/gh/zacharyburnett/tablecrow"><img alt="codecov" src="https://codecov.io/gh/zacharyburnett/tablecrow/branch/master/graph/badge.svg?token=FCJ2HXV0K6" /></a>
 <a class="reference external image-reference" href="https://github.com/zacharyburnett/TableCrow/actions?query=workflow%3Abuild"><img alt="build" src="https://github.com/zacharyburnett/TableCrow/workflows/build/badge.svg" /></a>
@@ -78,7 +79,7 @@ simple PostGIS and SpatiaLite operations.</p>
 </pre></div>
 </div>
 <section id="data-model">
-<h2>Data Model<a class="headerlink" href="#data-model" title="Permalink to this headline">¶</a></h2>
+<h2>Data Model<a class="headerlink" href="#data-model" title="Permalink to this headline"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">tablecrow</span></code> sees a database schema as a mapping of field names to Python types, and a database record / row as a mapping of field names to values:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
 
@@ -95,9 +96,9 @@ simple PostGIS and SpatiaLite operations.</p>
 </div>
 </section>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline"></a></h2>
 <section id="connect-to-an-existing-database">
-<h3>connect to an existing database<a class="headerlink" href="#connect-to-an-existing-database" title="Permalink to this headline">¶</a></h3>
+<h3>connect to an existing database<a class="headerlink" href="#connect-to-an-existing-database" title="Permalink to this headline"></a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tablecrow</span>
 
 <span class="c1"># list all tables in a SQLite database file</span>
@@ -115,7 +116,7 @@ simple PostGIS and SpatiaLite operations.</p>
 </div>
 </section>
 <section id="create-a-simple-table-single-primary-key-no-geometries">
-<h3>create a simple table (single primary key, no geometries)<a class="headerlink" href="#create-a-simple-table-single-primary-key-no-geometries" title="Permalink to this headline">¶</a></h3>
+<h3>create a simple table (single primary key, no geometries)<a class="headerlink" href="#create-a-simple-table-single-primary-key-no-geometries" title="Permalink to this headline"></a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span> <span class="nn">tablecrow</span> <span class="kn">import</span> <span class="n">PostGresTable</span>
 
@@ -148,18 +149,18 @@ simple PostGIS and SpatiaLite operations.</p>
 
 <span class="c1"># query the database with a dictionary, or a SQL `WHERE` clause as a string</span>
 <span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_where</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;short boi&#39;</span><span class="p">})</span>
-<span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_where</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+<span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_where</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">})</span>
 <span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_where</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;</span><span class="si">%lo</span><span class="s1">ng%&#39;</span><span class="p">})</span>
 <span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_where</span><span class="p">(</span><span class="s2">&quot;time &lt;= &#39;20200102&#39;::date&quot;</span><span class="p">)</span>
 <span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_where</span><span class="p">(</span><span class="s2">&quot;length &gt; 2 OR name ILIKE &#39;</span><span class="si">%s</span><span class="s2">hort%&#39;&quot;</span><span class="p">)</span>
 
 <span class="c1"># delete records with a query</span>
-<span class="n">table</span><span class="o">.</span><span class="n">delete_where</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+<span class="n">table</span><span class="o">.</span><span class="n">delete_where</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">})</span>
 </pre></div>
 </div>
 </section>
 <section id="create-a-table-with-multiple-primary-key-fields">
-<h3>create a table with multiple primary key fields<a class="headerlink" href="#create-a-table-with-multiple-primary-key-fields" title="Permalink to this headline">¶</a></h3>
+<h3>create a table with multiple primary key fields<a class="headerlink" href="#create-a-table-with-multiple-primary-key-fields" title="Permalink to this headline"></a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span> <span class="nn">tablecrow</span> <span class="kn">import</span> <span class="n">SQLiteTable</span>
 
@@ -186,7 +187,7 @@ simple PostGIS and SpatiaLite operations.</p>
 </div>
 </section>
 <section id="create-a-table-with-geometry-fields">
-<h3>create a table with geometry fields<a class="headerlink" href="#create-a-table-with-geometry-fields" title="Permalink to this headline">¶</a></h3>
+<h3>create a table with geometry fields<a class="headerlink" href="#create-a-table-with-geometry-fields" title="Permalink to this headline"></a></h3>
 <p>the database must have a spatial extension (such as PostGIS) installed</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyproj</span> <span class="kn">import</span> <span class="n">CRS</span>
 <span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">MultiPolygon</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">box</span>
@@ -234,7 +235,7 @@ simple PostGIS and SpatiaLite operations.</p>
 </section>
 </section>
 <section id="extending">
-<h2>Extending<a class="headerlink" href="#extending" title="Permalink to this headline">¶</a></h2>
+<h2>Extending<a class="headerlink" href="#extending" title="Permalink to this headline"></a></h2>
 <p>to write your own custom table interface, extend <code class="docutils literal notranslate"><span class="pre">DatabaseTable</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">from</span> <span class="nn">tablecrow.tables.base</span> <span class="kn">import</span> <span class="n">DatabaseTable</span>
@@ -255,8 +256,8 @@ simple PostGIS and SpatiaLite operations.</p>
         <span class="s1">&#39;timedelta&#39;</span><span class="p">:</span> <span class="s1">&#39;NotImplemented&#39;</span><span class="p">,</span>
     <span class="p">}</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">database</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fields</span><span class="p">:</span> <span class="p">{</span><span class="nb">str</span><span class="p">:</span> <span class="nb">type</span><span class="p">},</span> <span class="n">primary_key</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">users</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">database</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fields</span><span class="p">:</span> <span class="p">{</span><span class="nb">str</span><span class="p">:</span> <span class="nb">type</span><span class="p">},</span> <span class="n">primary_key</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+                 <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">users</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">database</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">primary_key</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">users</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;implement database connection and table creation here&#39;</span><span class="p">)</span>
 
@@ -287,13 +288,13 @@ simple PostGIS and SpatiaLite operations.</p>
 </div>
 </section>
 <section id="acknowledgements">
-<h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline"></a></h2>
 <p>The original core code and methodology of <code class="docutils literal notranslate"><span class="pre">tablecrow</span></code> was developed for the National Bathymetric Source project under
 the <a class="reference external" href="https://nauticalcharts.noaa.gov">Office of Coast Survey of the National Oceanic and Atmospheric Administration (NOAA)</a>, a part of the United
 States Department of Commerce, by <a class="reference external" href="https://github.com/glenrice-noaa">&#64;glenrice-noaa</a>, <a class="reference external" href="https://github.com/Casiano-Koprowski">&#64;Casiano-Koprowski</a>,
 and <a class="reference external" href="https://github.com/zacharyburnett">&#64;zacharyburnett</a>.</p>
 <div class="toctree-wrapper compound">
-<p><span class="caption-text">Reference</span></p>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">tablecrow</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tablecrow.html">tablecrow package</a></li>
