@@ -1,7 +1,7 @@
 .. mdinclude:: ../../README.md
 
 .. toctree::
-   :maxdepth: 2
    :caption: Reference
 
-   modules
+   tablecrow
+   tablecrow.tables

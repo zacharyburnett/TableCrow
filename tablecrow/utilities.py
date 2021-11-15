@@ -17,6 +17,13 @@ from shapely.geometry.base import GEOMETRY_TYPES
 
 
 def read_configuration(filename: PathLike) -> Dict[str, str]:
+    """
+    read a configuration file with `configparser`
+
+    :param filename: path to configuration
+    :return: dictionary mapping of configuration entries
+    """
+
     configuration_file = configparser.ConfigParser()
     configuration_file.read(filename)
     return {
@@ -27,6 +34,13 @@ def read_configuration(filename: PathLike) -> Dict[str, str]:
 
 
 def repository_root(path: PathLike = None) -> Path:
+    """
+    get the root directory of the current Git repository
+
+    :param path: query path
+    :return: repository root directory
+    """
+
     if path is None:
         path = __file__
     if not isinstance(path, Path):
@@ -41,7 +55,7 @@ def repository_root(path: PathLike = None) -> Path:
 
 def split_hostname_port(hostname: str) -> (str, Union[str, None]):
     """
-    Split the given URL into host and port, assuming port is appended after a colon.
+    split the given URL into host and port, assuming port is appended after a colon
 
     :param hostname: hostname string
     :return: hostname and port (if found, otherwise `None`)
@@ -61,6 +75,13 @@ def split_hostname_port(hostname: str) -> (str, Union[str, None]):
 
 
 def parse_hostname(hostname: str) -> Dict[str, str]:
+    """
+    parse detailed connection information from the given URL
+
+    :param hostname: URL with connection information
+    :return: dictionary of hostname, port, username, and password
+    """
+
     username = None
     password = None
 

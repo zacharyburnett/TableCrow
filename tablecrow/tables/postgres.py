@@ -624,7 +624,7 @@ class PostGresTable(DatabaseTable):
 
 def database_tables(cursor: Cursor, user_defined: bool = True) -> List[str]:
     """
-    List tables within the given database.
+    list of tables within the given PostGreSQL database
 
     :param cursor: psycopg2 cursor
     :return: list of table names
@@ -642,7 +642,7 @@ def database_tables(cursor: Cursor, user_defined: bool = True) -> List[str]:
 
 def database_has_table(cursor: psycopg2._psycopg.cursor, table: str) -> bool:
     """
-    Whether the given table exists within the given database.
+    whether the given table exists within the given PostGreSQL database
 
     :param cursor: psycopg2 cursor
     :param table: name of table
@@ -659,7 +659,7 @@ def database_has_table(cursor: psycopg2._psycopg.cursor, table: str) -> bool:
 
 def database_table_is_inherited(cursor: psycopg2._psycopg.cursor, table: str) -> bool:
     """
-    Whether the given table is inherited.
+    whether the given PostGreSQL table is inherited
 
     :param cursor: psycopg2 cursor
     :param table: name of table
@@ -675,7 +675,7 @@ def database_table_is_inherited(cursor: psycopg2._psycopg.cursor, table: str) ->
 
 def database_table_fields(cursor: psycopg2._psycopg.cursor, table: str) -> Dict[str, str]:
     """
-    Get field names and data types of the given table, within the given database.
+    field names and data types of the given table, within the given PostGreSQL database
 
     :param cursor: psycopg2 cursor
     :param table: name of table

@@ -1,37 +1,31 @@
-tablecrow.tables package
-========================
+tablecrow.tables
+================
 
-Submodules
-----------
-
-tablecrow.tables.base module
-----------------------------
-
-.. automodule:: tablecrow.tables.base
+.. automodule:: tablecrow.tables
    :members:
    :undoc-members:
    :show-inheritance:
 
-tablecrow.tables.postgres module
---------------------------------
+tablecrow.tables.postgres
+-------------------------
 
 .. automodule:: tablecrow.tables.postgres
    :members:
    :undoc-members:
    :show-inheritance:
 
-tablecrow.tables.sqlite module
-------------------------------
+tablecrow.tables.sqlite
+-----------------------
 
 .. automodule:: tablecrow.tables.sqlite
    :members:
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
+tablecrow.tables.base
+---------------------
 
-.. automodule:: tablecrow.tables
+.. automodule:: tablecrow.tables.base
    :members:
    :undoc-members:
    :show-inheritance:

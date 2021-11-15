@@ -538,7 +538,7 @@ class SQLiteTable(DatabaseTable):
 
 def database_tables(cursor: Cursor) -> List[str]:
     """
-    List tables within the given database.
+    list of tables within the given SQLite database
 
     :param cursor: sqlite3 cursor
     :return: list of table names
@@ -550,7 +550,7 @@ def database_tables(cursor: Cursor) -> List[str]:
 
 def database_has_table(cursor: Cursor, table: str) -> bool:
     """
-    Whether the given table exists within the given database.
+    whether the given table exists within the given SQLite database
 
     :param cursor: sqlite3 cursor
     :param table: name of table
@@ -562,7 +562,7 @@ def database_has_table(cursor: Cursor, table: str) -> bool:
 
 def database_table_fields(cursor: Cursor, table: str) -> Dict[str, str]:
     """
-    Get field names and data types of the given table, within the given database.
+    field names and data types of the given table, within the given SQLite database
 
     :param cursor: sqlite3 cursor
     :param table: name of table

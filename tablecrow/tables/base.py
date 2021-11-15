@@ -36,7 +36,7 @@ class DatabaseTable(ABC):
         logger: Logger = None,
     ):
         """
-        Create a new database table interface.
+        abstraction of a database table
 
         :param resource: URL of database server as `hostname:port`
         :param table_name: name of table in database
@@ -46,7 +46,7 @@ class DatabaseTable(ABC):
         :param crs: coordinate reference system of table geometries
         :param username: username to connect ot database
         :param password: password to connect to database
-        :param users: list of database users / roles
+        :param users: list of database users / roles to give access
         """
 
         self.__database = database
@@ -359,18 +359,32 @@ class DatabaseTable(ABC):
 
 
 def random_open_tcp_port() -> int:
+    """
+    :return: get an open TCP port on the current host
+    """
+
     open_socket = socket.socket()
     open_socket.bind(('', 0))
     return open_socket.getsockname()[1]
 
 
 def crs_key(crs: CRS) -> str:
+    """
+    :param crs: coordinate reference system
+    :return: CRS key
+    """
+
     if not isinstance(crs, CRS):
         crs = parse_crs(crs)
     return crs.wkt.split('"')[1]
 
 
 def is_compound_crs(crs: CRS) -> bool:
+    """
+    :param crs: coordinate reference system
+    :return: whether the CRS is compound
+    """
+
     if not isinstance(crs, CRS):
         crs = parse_crs(crs)
     return 'COMPD_CS' in crs.wkt or 'COMPOUNDCRS' in crs.wkt
@@ -378,9 +392,9 @@ def is_compound_crs(crs: CRS) -> bool:
 
 def split_compound_crs(crs: CRS) -> List[CRS]:
     """
-    Split the given compound coordinate reference system into its constituent CRS parts.
+    split the given compound coordinate reference system into its constituent CRS parts
 
-    :param crs: compound CRS
+    :param crs: compound coordinate reference system
     :returns: list of CRS parts
     """
 
@@ -416,7 +430,7 @@ def split_compound_crs(crs: CRS) -> List[CRS]:
 
 def compound_crs(crs_list: List[CRS], key: str = None) -> CRS:
     """
-    Build a compound coordinate reference system from the provided list of constituent CRSs.
+    build a compound coordinate reference system from the provided list of constituent CRSs
 
     :param crs_list: list of coordinate reference systems
     :param key: name of CRS
@@ -434,7 +448,7 @@ def compound_crs(crs_list: List[CRS], key: str = None) -> CRS:
 
 def parse_crs(crs: Union[str, int]) -> CRS:
     """
-    Parse a CRS object from the given well-known text or EPSG code.
+    parse a CRS object from the given well-known text or EPSG code
 
     :param crs: coordinate reference system; either well-known text or an EPSG code
     :returns: CRS object
@@ -457,6 +471,11 @@ def parse_crs(crs: Union[str, int]) -> CRS:
 
 
 def flatten_geometry(geometry: BaseGeometry) -> BaseGeometry:
+    """
+    :param geometry: Shapely geometry object
+    :return: geometry with Z values removed
+    """
+
     geometry_type = type(geometry)
 
     # strip 3rd dimension
@@ -484,7 +503,7 @@ def parse_record_values(
     record: Dict[str, Any], field_types: Dict[str, type]
 ) -> Dict[str, Any]:
     """
-    Parse the values in the given record into their respective field types.
+    parse the values in the given record into their respective field types
 
     :param record: dictionary mapping fields to values
     :param field_types: dictionary mapping fields to types

@@ -29,6 +29,16 @@ DATABASE_FUNCTIONS = {
 def connect(
     resource: Union[str, PathLike], table_names: List[str] = None, **kwargs
 ) -> List[DatabaseTable]:
+    """
+    the main connection function for connecting to an arbitrary database table
+
+    `tablecrow.connect()` will return TableCrow table(s) based on the given connection parameters
+
+    :param resource: location of database
+    :param table_names: names of tables to connect to
+    :return: list of tables
+    """
+
     if table_names is None:
         table_names = []
 
