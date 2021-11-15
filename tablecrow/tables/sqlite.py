@@ -5,7 +5,7 @@ from os import PathLike
 from pathlib import Path
 import sqlite3
 from sqlite3 import Connection, Cursor
-from typing import Any, Mapping, Sequence, Union
+from typing import Any, Dict, List, Mapping, Sequence, Union
 
 from pyproj import CRS
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
@@ -42,8 +42,8 @@ class SQLiteTable(DatabaseTable):
         self,
         path: PathLike,
         table_name: str,
-        fields: {str: type} = None,
-        primary_key: Union[str, Sequence[str]] = None,
+        fields: Dict[str, type] = None,
+        primary_key: Union[str, List[str]] = None,
         crs: CRS = None,
         logger: Logger = None,
     ):
@@ -204,7 +204,7 @@ class SQLiteTable(DatabaseTable):
         return ', '.join(schema)
 
     @property
-    def remote_fields(self) -> {str: type}:
+    def remote_fields(self) -> Dict[str, type]:
         if not self.connected:
             raise ConnectionError(f'no connection to {self.database}/{self.name}')
 
@@ -258,8 +258,8 @@ class SQLiteTable(DatabaseTable):
         return connected
 
     def records_where(
-        self, where: Union[Mapping[str, Any], str, Sequence[str]]
-    ) -> [{str: Any}]:
+        self, where: Union[Mapping[str, Any], str, List[str]]
+    ) -> List[Dict[str, Any]]:
         if not self.connected:
             raise ConnectionError(f'no connection to {self.database}/{self.name}')
 
@@ -289,8 +289,8 @@ class SQLiteTable(DatabaseTable):
         return matching_records
 
     def records_intersecting(
-        self, geometry: BaseGeometry, crs: CRS = None, geometry_fields: [str] = None
-    ) -> [{str: Any}]:
+        self, geometry: BaseGeometry, crs: CRS = None, geometry_fields: List[str] = None
+    ) -> List[Dict[str, Any]]:
         if crs is None:
             crs = self.crs
 
@@ -353,7 +353,7 @@ class SQLiteTable(DatabaseTable):
         ]
         return [{field: record[field] for field in self.fields} for record in records]
 
-    def insert(self, records: [{str: Any}]):
+    def insert(self, records: List[Dict[str, Any]]):
         if isinstance(records, dict):
             records = [records]
 
@@ -435,7 +435,7 @@ class SQLiteTable(DatabaseTable):
                             [geometry.wkt, self.crs.to_epsg(), primary_key_value],
                         )
 
-    def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
+    def delete_where(self, where: Union[Mapping[str, Any], str, List[str]]):
         if not self.connected:
             raise ConnectionError(f'no connection to {self.database}/{self.name}')
 
@@ -472,7 +472,7 @@ class SQLiteTable(DatabaseTable):
             f'{repr(self.fields)}, {repr(self.primary_key)}, {repr(self.crs.to_epsg()) if self.crs is not None else None})'
         )
 
-    def __where_clause(self, where: {str: Union[Any, list]}) -> (str, [Any]):
+    def __where_clause(self, where: Dict[str, Union[Any, list]]) -> (str, List[Any]):
         if (
             where is not None
             and not isinstance(where, Sequence)
@@ -536,7 +536,7 @@ class SQLiteTable(DatabaseTable):
         return where_clause, where_values
 
 
-def database_tables(cursor: Cursor) -> [str]:
+def database_tables(cursor: Cursor) -> List[str]:
     """
     List tables within the given database.
 
@@ -560,7 +560,7 @@ def database_has_table(cursor: Cursor, table: str) -> bool:
     return table in database_tables(cursor)
 
 
-def database_table_fields(cursor: Cursor, table: str) -> {str: str}:
+def database_table_fields(cursor: Cursor, table: str) -> Dict[str, str]:
     """
     Get field names and data types of the given table, within the given database.
 

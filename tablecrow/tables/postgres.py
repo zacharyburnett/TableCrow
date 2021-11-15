@@ -3,8 +3,8 @@ from functools import partial
 from getpass import getpass
 from logging import Logger
 from sqlite3 import Cursor
-from typing import Any, Collection
-from typing import Mapping, Sequence, Union
+from typing import Any, Collection, Dict
+from typing import List, Mapping, Sequence, Union
 from typing import get_args as typing_get_args
 
 import psycopg2
@@ -43,11 +43,11 @@ class PostGresTable(DatabaseTable):
         hostname: str,
         table_name: str,
         database: str = None,
-        fields: {str: type} = None,
-        primary_key: Union[str, Sequence[str]] = None,
+        fields: Dict[str, type] = None,
+        primary_key: Union[str, List[str]] = None,
         crs: CRS = None,
         username: str = None,
-        users: [str] = None,
+        users: List[str] = None,
         logger: Logger = None,
         **kwargs,
     ):
@@ -279,7 +279,7 @@ class PostGresTable(DatabaseTable):
         return ', '.join(schema)
 
     @property
-    def remote_fields(self) -> {str: type}:
+    def remote_fields(self) -> Dict[str, type]:
         if not self.connected:
             raise ConnectionError(
                 f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
@@ -339,8 +339,8 @@ class PostGresTable(DatabaseTable):
         return connected
 
     def records_where(
-        self, where: Union[Mapping[str, Any], str, Sequence[str]]
-    ) -> [{str: Any}]:
+        self, where: Union[Mapping[str, Any], str, List[str]]
+    ) -> List[Dict[str, Any]]:
         if not self.connected:
             raise ConnectionError(
                 f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
@@ -372,8 +372,8 @@ class PostGresTable(DatabaseTable):
         return matching_records
 
     def records_intersecting(
-        self, geometry: BaseGeometry, crs: CRS = None, geometry_fields: [str] = None
-    ) -> [{str: Any}]:
+        self, geometry: BaseGeometry, crs: CRS = None, geometry_fields: List[str] = None
+    ) -> List[Dict[str, Any]]:
         if crs is None:
             crs = self.crs
 
@@ -407,7 +407,7 @@ class PostGresTable(DatabaseTable):
             for record in records
         ]
 
-    def insert(self, records: [{str: Any}]):
+    def insert(self, records: List[Dict[str, Any]]):
         if isinstance(records, dict):
             records = [records]
 
@@ -512,7 +512,7 @@ class PostGresTable(DatabaseTable):
                             )
         connection.close()
 
-    def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
+    def delete_where(self, where: Union[Mapping[str, Any], str, List[str]]):
         if not self.connected:
             raise ConnectionError(
                 f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
@@ -558,7 +558,7 @@ class PostGresTable(DatabaseTable):
             f'{", ".join(key + "=" + repr(value) for key, value in self.kwargs.items())})'
         )
 
-    def __where_clause(self, where: {str: Union[Any, list]}) -> (str, [Any]):
+    def __where_clause(self, where: Dict[str, Union[Any, List]]) -> (str, List):
         if (
             where is not None
             and not isinstance(where, Sequence)
@@ -622,7 +622,7 @@ class PostGresTable(DatabaseTable):
         return where_clause, where_values
 
 
-def database_tables(cursor: Cursor, user_defined: bool = True) -> [str]:
+def database_tables(cursor: Cursor, user_defined: bool = True) -> List[str]:
     """
     List tables within the given database.
 
@@ -673,7 +673,7 @@ def database_table_is_inherited(cursor: psycopg2._psycopg.cursor, table: str) ->
     return cursor.fetchone()[0]
 
 
-def database_table_fields(cursor: psycopg2._psycopg.cursor, table: str) -> {str: str}:
+def database_table_fields(cursor: psycopg2._psycopg.cursor, table: str) -> Dict[str, str]:
     """
     Get field names and data types of the given table, within the given database.
 
