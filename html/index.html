@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TableCrow &mdash; tablecrow 1.3.9-post.10+80aea19 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="tablecrow" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> tablecrow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">tablecrow</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">tablecrow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>TableCrow</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tablecrow">
+<h1>TableCrow<a class="headerlink" href="#tablecrow" title="Permalink to this headline">¶</a></h1>
+<a class="reference external image-reference" href="https://github.com/zacharyburnett/TableCrow/actions?query=workflow%3Atests"><img alt="tests" src="https://github.com/zacharyburnett/TableCrow/workflows/tests/badge.svg" /></a>
+<a class="reference external image-reference" href="https://codecov.io/gh/zacharyburnett/tablecrow"><img alt="codecov" src="https://codecov.io/gh/zacharyburnett/tablecrow/branch/master/graph/badge.svg?token=FCJ2HXV0K6" /></a>
+<a class="reference external image-reference" href="https://github.com/zacharyburnett/TableCrow/actions?query=workflow%3Abuild"><img alt="build" src="https://github.com/zacharyburnett/TableCrow/workflows/build/badge.svg" /></a>
+<a class="reference external image-reference" href="https://pypi.org/project/tablecrow"><img alt="version" src="https://img.shields.io/pypi/v/tablecrow" /></a>
+<a class="reference external image-reference" href="https://opensource.org/licenses/MIT"><img alt="license" src="https://img.shields.io/github/license/zacharyburnett/tablecrow" /></a>
+<a class="reference external image-reference" href="https://sourceforge.net/p/oitnb/code"><img alt="style" src="https://sourceforge.net/p/oitnb/code/ci/default/tree/_doc/_static/oitnb.svg?format=raw" /></a>
+<p><code class="docutils literal notranslate"><span class="pre">tablecrow</span></code> is an abstraction over a generalized database table. Currently, <code class="docutils literal notranslate"><span class="pre">tablecrow</span></code> offers an abstraction for PostGreSQL and SQLite tables with
+simple PostGIS and SpatiaLite operations.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install tablecrow
+</pre></div>
+</div>
+<section id="data-model">
+<h2>Data Model<a class="headerlink" href="#data-model" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">tablecrow</span></code> sees a database schema as a mapping of field names to Python types, and a database record / row as a mapping of field names to values:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="n">fields</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
+<span class="n">record</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">4.4</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;long boi&#39;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For databases with a spatial extension, you can use <a class="reference external" href="https://shapely.readthedocs.io/en/stable/manual.html#geometric-objects">Shapely geometries</a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">Polygon</span>
+
+<span class="n">fields</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;polygon&#39;</span><span class="p">:</span> <span class="n">Polygon</span><span class="p">}</span>
+<span class="n">record</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;polygon&#39;</span><span class="p">:</span> <span class="n">Polygon</span><span class="p">([(</span><span class="o">-</span><span class="mf">77.1</span><span class="p">,</span> <span class="mf">39.65</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">77.1</span><span class="p">,</span> <span class="mf">39.725</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">77.4</span><span class="p">,</span> <span class="mf">39.725</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">77.4</span><span class="p">,</span> <span class="mf">39.65</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">77.1</span><span class="p">,</span> <span class="mf">39.65</span><span class="p">)])}</span>
+</pre></div>
+</div>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<section id="connect-to-an-existing-database">
+<h3>connect to an existing database<a class="headerlink" href="#connect-to-an-existing-database" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tablecrow</span>
+
+<span class="c1"># list all tables in a SQLite database file</span>
+<span class="n">sqlite_tables</span> <span class="o">=</span> <span class="n">tablecrow</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+    <span class="s1">&#39;~/test_database.db&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># connect to a PostGres database table</span>
+<span class="n">postgres_table</span> <span class="o">=</span> <span class="n">tablecrow</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+    <span class="s1">&#39;https://user:password@test.com/database:5432&#39;</span><span class="p">,</span>
+    <span class="n">database</span><span class="o">=</span><span class="s1">&#39;postgres&#39;</span><span class="p">,</span>
+    <span class="n">table_name</span><span class="o">=</span><span class="s1">&#39;test_table&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="create-a-simple-table-single-primary-key-no-geometries">
+<h3>create a simple table (single primary key, no geometries)<a class="headerlink" href="#create-a-simple-table-single-primary-key-no-geometries" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">tablecrow</span> <span class="kn">import</span> <span class="n">PostGresTable</span>
+
+<span class="n">table</span> <span class="o">=</span> <span class="n">PostGresTable</span><span class="p">(</span>
+    <span class="n">hostname</span><span class="o">=</span><span class="s1">&#39;localhost:5432&#39;</span><span class="p">,</span>
+    <span class="n">database</span><span class="o">=</span><span class="s1">&#39;postgres&#39;</span><span class="p">,</span>
+    <span class="n">table_name</span><span class="o">=</span><span class="s1">&#39;testing&#39;</span><span class="p">,</span>
+    <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
+    <span class="n">primary_key</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span>
+    <span class="n">username</span><span class="o">=</span><span class="s1">&#39;postgres&#39;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s1">&#39;&lt;password&gt;&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># add a list of records</span>
+<span class="n">table</span><span class="o">.</span><span class="n">insert</span><span class="p">([</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">4.4</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;long boi&#39;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;short boi&#39;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)},</span>
+<span class="p">])</span>
+
+<span class="c1"># set, access, or delete a single record using its primary key value</span>
+<span class="n">table</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;long&#39;</span><span class="p">}</span>
+<span class="n">record</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="k">del</span> <span class="n">table</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+<span class="c1"># list of records in the table</span>
+<span class="n">num_records</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+<span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records</span>
+
+<span class="c1"># query the database with a dictionary, or a SQL `WHERE` clause as a string</span>
+<span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_where</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;short boi&#39;</span><span class="p">})</span>
+<span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_where</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+<span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_where</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;</span><span class="si">%lo</span><span class="s1">ng%&#39;</span><span class="p">})</span>
+<span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_where</span><span class="p">(</span><span class="s2">&quot;time &lt;= &#39;20200102&#39;::date&quot;</span><span class="p">)</span>
+<span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_where</span><span class="p">(</span><span class="s2">&quot;length &gt; 2 OR name ILIKE &#39;</span><span class="si">%s</span><span class="s2">hort%&#39;&quot;</span><span class="p">)</span>
+
+<span class="c1"># delete records with a query</span>
+<span class="n">table</span><span class="o">.</span><span class="n">delete_where</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+</pre></div>
+</div>
+</section>
+<section id="create-a-table-with-multiple-primary-key-fields">
+<h3>create a table with multiple primary key fields<a class="headerlink" href="#create-a-table-with-multiple-primary-key-fields" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">tablecrow</span> <span class="kn">import</span> <span class="n">SQLiteTable</span>
+
+<span class="n">table</span> <span class="o">=</span> <span class="n">SQLiteTable</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s1">&#39;test_database.db&#39;</span><span class="p">,</span>
+    <span class="n">table_name</span><span class="o">=</span><span class="s1">&#39;testing&#39;</span><span class="p">,</span>
+    <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
+    <span class="n">primary_key</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># a compound primary key allows more flexibility in ID</span>
+<span class="n">table</span><span class="o">.</span><span class="n">insert</span><span class="p">([</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">4.4</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;long boi&#39;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;short boi&#39;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;short boi&#39;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;long boi&#39;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;short boi&#39;</span><span class="p">},</span>
+<span class="p">])</span>
+
+<span class="c1"># key accessors must include entire primary key</span>
+<span class="n">table</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">}</span>
+<span class="n">record</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;long boi&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="create-a-table-with-geometry-fields">
+<h3>create a table with geometry fields<a class="headerlink" href="#create-a-table-with-geometry-fields" title="Permalink to this headline">¶</a></h3>
+<p>the database must have a spatial extension (such as PostGIS) installed</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyproj</span> <span class="kn">import</span> <span class="n">CRS</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">MultiPolygon</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">box</span>
+<span class="kn">from</span> <span class="nn">tablecrow</span> <span class="kn">import</span> <span class="n">PostGresTable</span>
+
+<span class="n">table</span> <span class="o">=</span> <span class="n">PostGresTable</span><span class="p">(</span>
+    <span class="n">hostname</span><span class="o">=</span><span class="s1">&#39;localhost:5432&#39;</span><span class="p">,</span>
+    <span class="n">database</span><span class="o">=</span><span class="s1">&#39;postgres&#39;</span><span class="p">,</span>
+    <span class="n">table_name</span><span class="o">=</span><span class="s1">&#39;testing&#39;</span><span class="p">,</span>
+    <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;polygon&#39;</span><span class="p">:</span> <span class="n">Polygon</span><span class="p">,</span> <span class="s1">&#39;multipolygon&#39;</span><span class="p">:</span> <span class="n">MultiPolygon</span><span class="p">},</span>
+    <span class="n">primary_key</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span>
+    <span class="n">username</span><span class="o">=</span><span class="s1">&#39;postgres&#39;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s1">&#39;&lt;password&gt;&#39;</span><span class="p">,</span>
+    <span class="n">crs</span><span class="o">=</span><span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="mi">4326</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">big_box</span> <span class="o">=</span> <span class="n">box</span><span class="p">(</span><span class="o">-</span><span class="mf">77.4</span><span class="p">,</span> <span class="mf">39.65</span><span class="p">,</span> <span class="o">-</span><span class="mf">77.1</span><span class="p">,</span> <span class="mf">39.725</span><span class="p">)</span>
+<span class="n">little_box_inside_big_box</span> <span class="o">=</span> <span class="n">box</span><span class="p">(</span><span class="o">-</span><span class="mf">77.7</span><span class="p">,</span> <span class="mf">39.725</span><span class="p">,</span> <span class="o">-</span><span class="mf">77.4</span><span class="p">,</span> <span class="mf">39.8</span><span class="p">)</span>
+<span class="n">little_box_touching_big_box</span> <span class="o">=</span> <span class="n">box</span><span class="p">(</span><span class="o">-</span><span class="mf">77.1</span><span class="p">,</span> <span class="mf">39.575</span><span class="p">,</span> <span class="o">-</span><span class="mf">76.8</span><span class="p">,</span> <span class="mf">39.65</span><span class="p">)</span>
+<span class="n">disparate_box</span> <span class="o">=</span> <span class="n">box</span><span class="p">(</span><span class="o">-</span><span class="mf">77.7</span><span class="p">,</span> <span class="mf">39.425</span><span class="p">,</span> <span class="o">-</span><span class="mf">77.4</span><span class="p">,</span> <span class="mf">39.5</span><span class="p">)</span>
+<span class="n">big_box_in_utm18n</span> <span class="o">=</span> <span class="n">box</span><span class="p">(</span><span class="mf">268397.8</span><span class="p">,</span> <span class="mf">4392279.8</span><span class="p">,</span> <span class="mf">320292.0</span><span class="p">,</span> <span class="mf">4407509.6</span><span class="p">)</span>
+
+<span class="n">multi_box</span> <span class="o">=</span> <span class="n">MultiPolygon</span><span class="p">([</span><span class="n">little_box_inside_big_box</span><span class="p">,</span> <span class="n">little_box_touching_big_box</span><span class="p">])</span>
+
+<span class="n">table</span><span class="o">.</span><span class="n">insert</span><span class="p">([</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;polygon&#39;</span><span class="p">:</span> <span class="n">little_box_inside_big_box</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;polygon&#39;</span><span class="p">:</span> <span class="n">little_box_touching_big_box</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;polygon&#39;</span><span class="p">:</span> <span class="n">disparate_box</span><span class="p">,</span> <span class="s1">&#39;multipolygon&#39;</span><span class="p">:</span> <span class="n">multi_box</span><span class="p">},</span>
+<span class="p">])</span>
+
+<span class="c1"># find all records with any geometry intersecting the given geometry</span>
+<span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_intersecting</span><span class="p">(</span><span class="n">big_box</span><span class="p">)</span>
+
+<span class="c1"># find all records with only specific geometry fields intersecting the given geometry</span>
+<span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_intersecting</span><span class="p">(</span><span class="n">big_box</span><span class="p">,</span> <span class="n">geometry_fields</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;polygon&#39;</span><span class="p">])</span>
+
+<span class="c1"># you can also provide geometries in a different CRS</span>
+<span class="n">records</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">records_intersecting</span><span class="p">(</span>
+    <span class="n">big_box_in_utm18n</span><span class="p">,</span>
+    <span class="n">crs</span><span class="o">=</span><span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="mi">32618</span><span class="p">),</span>
+    <span class="n">geometry_fields</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;polygon&#39;</span><span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="extending">
+<h2>Extending<a class="headerlink" href="#extending" title="Permalink to this headline">¶</a></h2>
+<p>to write your own custom table interface, extend <code class="docutils literal notranslate"><span class="pre">DatabaseTable</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">tablecrow.tables.base</span> <span class="kn">import</span> <span class="n">DatabaseTable</span>
+
+
+<span class="k">class</span> <span class="nc">CustomDatabaseTable</span><span class="p">(</span><span class="n">DatabaseTable</span><span class="p">):</span>
+    <span class="c1"># mapping from Python types to database types</span>
+    <span class="n">FIELD_TYPES</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;NoneType&#39;</span><span class="p">:</span> <span class="s1">&#39;NotImplemented&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;bool&#39;</span><span class="p">:</span> <span class="s1">&#39;NotImplemented&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;float&#39;</span><span class="p">:</span> <span class="s1">&#39;NotImplemented&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;int&#39;</span><span class="p">:</span> <span class="s1">&#39;NotImplemented&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;str&#39;</span><span class="p">:</span> <span class="s1">&#39;NotImplemented&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;bytes&#39;</span><span class="p">:</span> <span class="s1">&#39;NotImplemented&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;date&#39;</span><span class="p">:</span> <span class="s1">&#39;NotImplemented&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="s1">&#39;NotImplemented&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;datetime&#39;</span><span class="p">:</span> <span class="s1">&#39;NotImplemented&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;timedelta&#39;</span><span class="p">:</span> <span class="s1">&#39;NotImplemented&#39;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">database</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fields</span><span class="p">:</span> <span class="p">{</span><span class="nb">str</span><span class="p">:</span> <span class="nb">type</span><span class="p">},</span> <span class="n">primary_key</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">users</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">database</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">primary_key</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">users</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;implement database connection and table creation here&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;implement database table existence check here&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">schema</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;implement string generation for the database schema here&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">remote_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">{</span><span class="nb">str</span><span class="p">:</span> <span class="nb">type</span><span class="p">}:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;implement accessor for database fields here&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">records_where</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">where</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="p">[{</span><span class="nb">str</span><span class="p">:</span> <span class="n">Any</span><span class="p">}]:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;implement database record query here&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">records</span><span class="p">:</span> <span class="p">[{</span><span class="nb">str</span><span class="p">:</span> <span class="n">Any</span><span class="p">}]):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;implement database record insertion here&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">delete_where</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">where</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;implement database record deletion here&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">delete_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;implement database table deletion here&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="acknowledgements">
+<h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>The original core code and methodology of <code class="docutils literal notranslate"><span class="pre">tablecrow</span></code> was developed for the National Bathymetric Source project under
+the <a class="reference external" href="https://nauticalcharts.noaa.gov">Office of Coast Survey of the National Oceanic and Atmospheric Administration (NOAA)</a>, a part of the United
+States Department of Commerce, by <a class="reference external" href="https://github.com/glenrice-noaa">&#64;glenrice-noaa</a>, <a class="reference external" href="https://github.com/Casiano-Koprowski">&#64;Casiano-Koprowski</a>,
+and <a class="reference external" href="https://github.com/zacharyburnett">&#64;zacharyburnett</a>.</p>
+<div class="toctree-wrapper compound">
+<p><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">tablecrow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tablecrow.html">tablecrow package</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-right" title="tablecrow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Zach Burnett.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
