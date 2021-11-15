@@ -3,7 +3,7 @@ import logging
 from logging import Logger
 from pathlib import Path
 import socket
-from typing import Any, Generator, Mapping, Sequence, Union
+from typing import Any, Dict, Generator, List, Mapping, Sequence, Union
 
 from pyproj import CRS
 from shapely.geometry import LinearRing, MultiPolygon, Polygon
@@ -20,19 +20,19 @@ class TableNotFoundError(FileNotFoundError):
 
 class DatabaseTable(ABC):
     DEFAULT_PORT = NotImplementedError
-    FIELD_TYPES: {str: str} = NotImplementedError
+    FIELD_TYPES: Dict[str, str] = NotImplementedError
 
     def __init__(
         self,
         resource: str,
         table_name: str,
         database: str = None,
-        fields: {str: type} = None,
-        primary_key: Union[str, Sequence[str]] = None,
+        fields: Dict[str, type] = None,
+        primary_key: Union[str, List[str]] = None,
         crs: CRS = None,
         username: str = None,
         password: str = None,
-        users: [str] = None,
+        users: List[str] = None,
         logger: Logger = None,
     ):
         """
@@ -128,13 +128,13 @@ class DatabaseTable(ABC):
         return self.__name
 
     @property
-    def fields(self) -> {str: type}:
+    def fields(self) -> Dict[str, type]:
         if self.__fields is None:
             self.__fields = self.remote_fields
         return self.__fields
 
     @property
-    def primary_key(self) -> [str]:
+    def primary_key(self) -> List[str]:
         return self.__primary_key
 
     @property
@@ -146,7 +146,7 @@ class DatabaseTable(ABC):
         return self.__username
 
     @property
-    def users(self) -> [str]:
+    def users(self) -> List[str]:
         return self.__users
 
     @property
@@ -161,7 +161,7 @@ class DatabaseTable(ABC):
         raise NotImplementedError
 
     @property
-    def geometry_fields(self) -> {str: type}:
+    def geometry_fields(self) -> Dict[str, type]:
         """ local fields with geometry type """
         geometry_fields = {}
         if self.fields is not None:
@@ -177,7 +177,7 @@ class DatabaseTable(ABC):
 
     @property
     @abstractmethod
-    def remote_fields(self) -> {str: type}:
+    def remote_fields(self) -> Dict[str, type]:
         """ fields at remote table """
         raise NotImplementedError
 
@@ -194,14 +194,14 @@ class DatabaseTable(ABC):
             return False
 
     @property
-    def records(self) -> [{str: Any}]:
+    def records(self) -> List[Dict[str, Any]]:
         """ list of records in the table """
         return self.records_where(None)
 
     @abstractmethod
     def records_where(
-        self, where: Union[Mapping[str, Any], str, Sequence[str]]
-    ) -> [{str: Any}]:
+        self, where: Union[Mapping[str, Any], str, List[str]]
+    ) -> List[Dict[str, Any]]:
         """
         list of records in the table that match the query
 
@@ -212,7 +212,7 @@ class DatabaseTable(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def insert(self, records: [{str: Any}]):
+    def insert(self, records: List[Dict[str, Any]]):
         """
         insert the list of records into the table
 
@@ -222,7 +222,7 @@ class DatabaseTable(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def delete_where(self, where: Union[Mapping[str, Any], str, Sequence[str]]):
+    def delete_where(self, where: Union[Mapping[str, Any], str, List[str]]):
         """
         delete records from the table matching the given query
 
@@ -231,7 +231,7 @@ class DatabaseTable(ABC):
 
         raise NotImplementedError
 
-    def __getitem__(self, key: Any) -> {str: Any}:
+    def __getitem__(self, key: Any) -> Dict[str, Any]:
         """
         Return the record matching the given primary key value.
 
@@ -272,7 +272,7 @@ class DatabaseTable(ABC):
         except:
             raise KeyError(f'no record with primary key "{key}"')
 
-    def __setitem__(self, key: Any, record: {str: Any}):
+    def __setitem__(self, key: Any, record: Dict[str, Any]):
         """
         Insert the given record into the table.
 
@@ -376,7 +376,7 @@ def is_compound_crs(crs: CRS) -> bool:
     return 'COMPD_CS' in crs.wkt or 'COMPOUNDCRS' in crs.wkt
 
 
-def split_compound_crs(crs: CRS) -> [CRS]:
+def split_compound_crs(crs: CRS) -> List[CRS]:
     """
     Split the given compound coordinate reference system into its constituent CRS parts.
 
@@ -414,7 +414,7 @@ def split_compound_crs(crs: CRS) -> [CRS]:
         return [CRS.from_string(wkt) for wkt in wkts]
 
 
-def compound_crs(crs_list: [CRS], key: str = None) -> CRS:
+def compound_crs(crs_list: List[CRS], key: str = None) -> CRS:
     """
     Build a compound coordinate reference system from the provided list of constituent CRSs.
 
@@ -480,7 +480,9 @@ def flatten_geometry(geometry: BaseGeometry) -> BaseGeometry:
     return geometry
 
 
-def parse_record_values(record: {str: Any}, field_types: {str: type}) -> {str: Any}:
+def parse_record_values(
+    record: Dict[str, Any], field_types: Dict[str, type]
+) -> Dict[str, Any]:
     """
     Parse the values in the given record into their respective field types.
 

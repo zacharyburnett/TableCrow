@@ -7,7 +7,7 @@ from os import PathLike
 from pathlib import Path
 import re
 import sys
-from typing import Any, Collection, Iterable, Mapping, Union
+from typing import Any, Collection, Dict, Iterable, Mapping, Union
 
 from dateutil.parser import parse as parse_date
 from pyproj import CRS
@@ -16,7 +16,7 @@ from shapely.geometry import shape as shapely_shape
 from shapely.geometry.base import GEOMETRY_TYPES
 
 
-def read_configuration(filename: PathLike) -> {str: str}:
+def read_configuration(filename: PathLike) -> Dict[str, str]:
     configuration_file = configparser.ConfigParser()
     configuration_file.read(filename)
     return {
@@ -60,7 +60,7 @@ def split_hostname_port(hostname: str) -> (str, Union[str, None]):
     return hostname, port
 
 
-def parse_hostname(hostname: str) -> {str: str}:
+def parse_hostname(hostname: str) -> Dict[str, str]:
     username = None
     password = None
 

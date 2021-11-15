@@ -1,7 +1,7 @@
 from os import PathLike
 from pathlib import Path
 import sqlite3
-from typing import Union
+from typing import List, Union
 
 import psycopg2
 
@@ -27,8 +27,8 @@ DATABASE_FUNCTIONS = {
 
 
 def connect(
-    resource: Union[str, PathLike], table_names: [str] = None, **kwargs
-) -> [DatabaseTable]:
+    resource: Union[str, PathLike], table_names: List[str] = None, **kwargs
+) -> List[DatabaseTable]:
     if table_names is None:
         table_names = []
 
