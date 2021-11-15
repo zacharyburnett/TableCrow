@@ -34,7 +34,7 @@ setup(
     ],
     extras_require={
         'testing': ['pytest', 'pytest-cov', 'pytest-xdist'],
-        'development': ['flake8', 'isort', 'oitnb'],
-        'documentation': ['m2r2', 'sphinx-rtd-theme'],
+        'development': ['dunamai', 'flake8', 'isort', 'oitnb'],
+        'documentation': ['dunamai', 'm2r2', 'sphinx-rtd-theme'],
     },
 )
