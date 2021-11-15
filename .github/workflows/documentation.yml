@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2.4.0
+        with:
+          fetch-depth: 0
       - name: Build documentation site with Sphinx
         uses: ammaraskar/sphinx-action@0.4
         with:
