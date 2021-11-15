@@ -9,6 +9,7 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+import os
 from os import PathLike
 from pathlib import Path
 import sys
@@ -32,7 +33,6 @@ def repository_root(path: PathLike = None) -> Path:
 
 sys.path.insert(0, str(repository_root()))
 
-
 # -- Project information -----------------------------------------------------
 metadata = config.read_configuration('../../setup.cfg')['metadata']
 
@@ -41,8 +41,10 @@ author = metadata['author']
 copyright = f'2021, {author}'
 
 # The full version, including alpha/beta/rc tags
-release = Version.from_any_vcs().serialize()
-
+try:
+    release = Version.from_any_vcs().serialize()
+except RuntimeError:
+    release = os.environ.get('VERSION')
 
 # -- General configuration ---------------------------------------------------
 

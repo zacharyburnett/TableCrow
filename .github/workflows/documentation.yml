@@ -18,7 +18,6 @@ jobs:
         with:
           env-var: VERSION
           args: --style semver
-      - run: echo $VERSION
       - name: Build documentation site with Sphinx
         uses: ammaraskar/sphinx-action@0.4
         with:
