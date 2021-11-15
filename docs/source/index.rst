@@ -1,7 +1,5 @@
-.. mdinclude:: ../../README.md
-
 .. toctree::
-   :caption: Reference
-
    tablecrow
    tablecrow.tables
+
+.. mdinclude:: ../../README.md
