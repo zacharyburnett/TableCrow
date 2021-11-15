@@ -1,72 +1,39 @@
-<!DOCTYPE html>
-<html class="writer-html5" lang="en" >
-<head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18: http://docutils.sourceforge.net/" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TableCrow &mdash; tablecrow 1.4.0.post10.dev0+624b70b documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-    <script src="_static/js/theme.js"></script>
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18: http://docutils.sourceforge.net/" />
+
+    <title>TableCrow &#8212; tablecrow 1.4.0.post11.dev0+799143c documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="tablecrow" href="modules.html" /> 
-</head>
+    <link rel="next" title="tablecrow" href="modules.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
-<body class="wy-body-for-nav"> 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
-            <a href="#" class="icon icon-home"> tablecrow
-          </a>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">tablecrow</a></li>
-</ul>
+  </head><body>
+  
 
-        </div>
-      </div>
-    </nav>
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">tablecrow</a>
-      </nav>
-
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>TableCrow</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
-      </li>
-  </ul>
-  <hr/>
-</div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
+          <div class="body" role="main">
+            
   <section id="tablecrow">
-<h1>TableCrow<a class="headerlink" href="#tablecrow" title="Permalink to this headline"></a></h1>
+<h1>TableCrow<a class="headerlink" href="#tablecrow" title="Permalink to this headline">¶</a></h1>
 <a class="reference external image-reference" href="https://github.com/zacharyburnett/TableCrow/actions?query=workflow%3Atests"><img alt="tests" src="https://github.com/zacharyburnett/TableCrow/workflows/tests/badge.svg" /></a>
 <a class="reference external image-reference" href="https://codecov.io/gh/zacharyburnett/tablecrow"><img alt="codecov" src="https://codecov.io/gh/zacharyburnett/tablecrow/branch/master/graph/badge.svg?token=FCJ2HXV0K6" /></a>
 <a class="reference external image-reference" href="https://github.com/zacharyburnett/TableCrow/actions?query=workflow%3Abuild"><img alt="build" src="https://github.com/zacharyburnett/TableCrow/workflows/build/badge.svg" /></a>
@@ -79,7 +46,7 @@ simple PostGIS and SpatiaLite operations.</p>
 </pre></div>
 </div>
 <section id="data-model">
-<h2>Data Model<a class="headerlink" href="#data-model" title="Permalink to this headline"></a></h2>
+<h2>Data Model<a class="headerlink" href="#data-model" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">tablecrow</span></code> sees a database schema as a mapping of field names to Python types, and a database record / row as a mapping of field names to values:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
 
@@ -96,9 +63,9 @@ simple PostGIS and SpatiaLite operations.</p>
 </div>
 </section>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline"></a></h2>
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
 <section id="connect-to-an-existing-database">
-<h3>connect to an existing database<a class="headerlink" href="#connect-to-an-existing-database" title="Permalink to this headline"></a></h3>
+<h3>connect to an existing database<a class="headerlink" href="#connect-to-an-existing-database" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tablecrow</span>
 
 <span class="c1"># list all tables in a SQLite database file</span>
@@ -116,7 +83,7 @@ simple PostGIS and SpatiaLite operations.</p>
 </div>
 </section>
 <section id="create-a-simple-table-single-primary-key-no-geometries">
-<h3>create a simple table (single primary key, no geometries)<a class="headerlink" href="#create-a-simple-table-single-primary-key-no-geometries" title="Permalink to this headline"></a></h3>
+<h3>create a simple table (single primary key, no geometries)<a class="headerlink" href="#create-a-simple-table-single-primary-key-no-geometries" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span> <span class="nn">tablecrow</span> <span class="kn">import</span> <span class="n">PostGresTable</span>
 
@@ -160,7 +127,7 @@ simple PostGIS and SpatiaLite operations.</p>
 </div>
 </section>
 <section id="create-a-table-with-multiple-primary-key-fields">
-<h3>create a table with multiple primary key fields<a class="headerlink" href="#create-a-table-with-multiple-primary-key-fields" title="Permalink to this headline"></a></h3>
+<h3>create a table with multiple primary key fields<a class="headerlink" href="#create-a-table-with-multiple-primary-key-fields" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span> <span class="nn">tablecrow</span> <span class="kn">import</span> <span class="n">SQLiteTable</span>
 
@@ -187,7 +154,7 @@ simple PostGIS and SpatiaLite operations.</p>
 </div>
 </section>
 <section id="create-a-table-with-geometry-fields">
-<h3>create a table with geometry fields<a class="headerlink" href="#create-a-table-with-geometry-fields" title="Permalink to this headline"></a></h3>
+<h3>create a table with geometry fields<a class="headerlink" href="#create-a-table-with-geometry-fields" title="Permalink to this headline">¶</a></h3>
 <p>the database must have a spatial extension (such as PostGIS) installed</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyproj</span> <span class="kn">import</span> <span class="n">CRS</span>
 <span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">MultiPolygon</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">box</span>
@@ -235,7 +202,7 @@ simple PostGIS and SpatiaLite operations.</p>
 </section>
 </section>
 <section id="extending">
-<h2>Extending<a class="headerlink" href="#extending" title="Permalink to this headline"></a></h2>
+<h2>Extending<a class="headerlink" href="#extending" title="Permalink to this headline">¶</a></h2>
 <p>to write your own custom table interface, extend <code class="docutils literal notranslate"><span class="pre">DatabaseTable</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">from</span> <span class="nn">tablecrow.tables.base</span> <span class="kn">import</span> <span class="n">DatabaseTable</span>
@@ -288,7 +255,7 @@ simple PostGIS and SpatiaLite operations.</p>
 </div>
 </section>
 <section id="acknowledgements">
-<h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline"></a></h2>
+<h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
 <p>The original core code and methodology of <code class="docutils literal notranslate"><span class="pre">tablecrow</span></code> was developed for the National Bathymetric Source project under
 the <a class="reference external" href="https://nauticalcharts.noaa.gov">Office of Coast Survey of the National Oceanic and Atmospheric Administration (NOAA)</a>, a part of the United
 States Department of Commerce, by <a class="reference external" href="https://github.com/glenrice-noaa">&#64;glenrice-noaa</a>, <a class="reference external" href="https://github.com/Casiano-Koprowski">&#64;Casiano-Koprowski</a>,
@@ -306,33 +273,71 @@ and <a class="reference external" href="https://github.com/zacharyburnett">&#64;
 </section>
 
 
-           </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="modules.html" class="btn btn-neutral float-right" title="tablecrow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>&#169; Copyright 2021, Zach Burnett.</p>
-  </div>
-
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
-
-</footer>
+          
         </div>
       </div>
-    </section>
-  </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">tablecrow</a></h1>
 
-</body>
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">tablecrow</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="modules.html" title="next chapter">tablecrow</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Zach Burnett.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
 </html>
