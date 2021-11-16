@@ -108,7 +108,7 @@ def parse_hostname(hostname: str) -> Dict[str, str]:
     }
 
 
-def guard_generic_alias(generic_alias: 'typing._GenericAlias') -> type:
+def guard_generic_alias(generic_alias) -> type:
     """
     convert an instance of a subscripted `typing._GenericAlias` to a subscripted type
     :param generic_alias: generic alias
