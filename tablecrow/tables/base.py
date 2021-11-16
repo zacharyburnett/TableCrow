@@ -171,7 +171,7 @@ class DatabaseTable(ABC):
                         field_type = field_type[0]
                     else:
                         field_type = list
-                if field_type.__name__ in GEOMETRY_TYPES:
+                if isinstance(field_type, type) and field_type.__name__ in GEOMETRY_TYPES:
                     geometry_fields[field] = field_type
         return geometry_fields
 

@@ -112,6 +112,10 @@ def convert_value(value: Any, to_type: type) -> Any:
     if isinstance(to_type, str):
         to_type = eval(to_type)
 
+    # catch generics
+    if hasattr(to_type, '__origin__'):
+        to_type = to_type.__origin__(to_type.__args__)
+
     if isinstance(value, Enum):
         value = value.name
 
