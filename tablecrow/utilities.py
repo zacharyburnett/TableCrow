@@ -18,7 +18,7 @@ from shapely.geometry.base import GEOMETRY_TYPES
 
 def read_configuration(filename: PathLike) -> Dict[str, str]:
     """
-    read a configuration file with `configparser`
+    read a configuration file with ``configparser``
 
     :param filename: path to configuration
     :return: dictionary mapping of configuration entries
@@ -58,7 +58,7 @@ def split_hostname_port(hostname: str) -> (str, Union[str, None]):
     split the given URL into host and port, assuming port is appended after a colon
 
     :param hostname: hostname string
-    :return: hostname and port (if found, otherwise `None`)
+    :return: hostname and port (if found, otherwise ``None``)
     """
 
     port = None
@@ -110,7 +110,7 @@ def parse_hostname(hostname: str) -> Dict[str, str]:
 
 def guard_generic_alias(generic_alias) -> type:
     """
-    convert an instance of a subscripted `typing._GenericAlias` to a subscripted type
+    convert an instance of a subscripted ``typing._GenericAlias`` to a subscripted type
 
     :param generic_alias: generic alias
     :return: type

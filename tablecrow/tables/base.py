@@ -38,7 +38,7 @@ class DatabaseTable(ABC):
         """
         abstraction of a database table
 
-        :param resource: URL of database server as `hostname:port`
+        :param resource: URL of database server as ``hostname:port``
         :param table_name: name of table in database
         :param database: name of database in server
         :param fields: dictionary of fields
