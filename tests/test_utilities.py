@@ -231,6 +231,7 @@ def test_guard_generic_alias():
     mixed_type_3 = guard_generic_alias({str: Tuple[str, int]})
     mixed_type_4 = guard_generic_alias({str: (Dict[int, str], str)})
 
+    # TODO this doesn't work on Python 3.8 because it is a generic `~K` and `~T` type
     # assert simple_type_1 == []
     # assert simple_type_2 == ()
     # assert simple_type_3 == {}
