@@ -3,13 +3,16 @@ from functools import partial
 from getpass import getpass
 from logging import Logger
 from sqlite3 import Cursor
-from typing import Any, Collection, Dict, List, Mapping, Sequence, Union, get_args as typing_get_args
+from typing import Any, Collection, Dict
+from typing import List, Mapping, Sequence, Union
+from typing import get_args as typing_get_args
 
 import psycopg2
 from psycopg2._psycopg import connection
 from pyproj import CRS
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry, GEOMETRY_TYPES
 from sshtunnel import SSHTunnelForwarder
+
 from tablecrow.tables.base import DatabaseTable, parse_record_values, random_open_tcp_port
 
 from ..utilities import guard_generic_alias, parse_hostname, split_hostname_port

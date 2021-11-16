@@ -42,9 +42,7 @@ record = {'id': 1, 'polygon': Polygon([(-77.1, 39.65), (-77.1, 39.725), (-77.4, 
 import tablecrow
 
 # list all tables in a SQLite database file
-sqlite_tables = tablecrow.connect(
-    '~/test_database.db',
-)
+sqlite_tables = tablecrow.connect('test_database.db')
 
 # connect to a PostGres database table
 postgres_table = tablecrow.connect(

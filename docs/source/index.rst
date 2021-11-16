@@ -3,5 +3,6 @@
 
    tablecrow
    tablecrow.tables
+   utilities
 
 .. mdinclude:: ../../README.md

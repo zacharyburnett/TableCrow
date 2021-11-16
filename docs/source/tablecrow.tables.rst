@@ -1,11 +1,6 @@
 tablecrow.tables
 ================
 
-.. automodule:: tablecrow.tables
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tablecrow.tables.postgres
 -------------------------
 
