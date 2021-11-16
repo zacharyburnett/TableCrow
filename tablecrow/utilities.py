@@ -108,13 +108,30 @@ def parse_hostname(hostname: str) -> Dict[str, str]:
     }
 
 
+def guard_generic_alias(generic_alias: 'typing._GenericAlias') -> type:
+    """
+    convert an instance of a subscripted `typing._GenericAlias` to a subscripted type
+    :param generic_alias: generic alias
+    :return: type
+
+    :example:
+    >>> from typing import List
+    >>> guard_generic_alias(List[str])
+    [str]
+
+    """
+
+    if hasattr(generic_alias, '__origin__'):
+        generic_alias = generic_alias.__origin__(generic_alias.__args__)
+
+    return generic_alias
+
+
 def convert_value(value: Any, to_type: type) -> Any:
     if isinstance(to_type, str):
         to_type = eval(to_type)
 
-    # catch generics
-    if hasattr(to_type, '__origin__'):
-        to_type = to_type.__origin__(to_type.__args__)
+    to_type = guard_generic_alias(to_type)
 
     if isinstance(value, Enum):
         value = value.name

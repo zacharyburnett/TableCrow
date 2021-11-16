@@ -15,7 +15,7 @@ from sshtunnel import SSHTunnelForwarder
 
 from tablecrow.tables.base import DatabaseTable, parse_record_values, random_open_tcp_port
 
-from ..utilities import parse_hostname, split_hostname_port
+from ..utilities import guard_generic_alias, parse_hostname, split_hostname_port
 
 SSH_DEFAULT_PORT = 22
 
@@ -268,7 +268,7 @@ class PostGresTable(DatabaseTable):
                 field_type = dict
 
             try:
-                field_type = self.FIELD_TYPES[field_type.__name__]
+                field_type = self.FIELD_TYPES[guard_generic_alias(field_type.__name__)]
             except KeyError:
                 raise TypeError(f'PostGres does not support type "{field_type}"')
 
