@@ -38,11 +38,13 @@ def connect(
     :param table_names: names of tables to connect to
     :return: list of tables
 
+    >>> import tablecrow
     >>> # list all tables in a SQLite database file
-    >>> sqlite_tables = connect('test_database.db')
+    >>> sqlite_tables = tablecrow.connect('test_database.db')
 
+    >>> import tablecrow
     >>> # connect to a PostGres database table
-    >>> postgres_table = connect('https://user:password@test.com/database:5432', database='postgres', table_names=['test_table'])
+    >>> postgres_table = tablecrow.connect('https://user:password@test.com/database:5432', database='postgres', table_names=['test_table'])
     """
 
     if table_names is None:
