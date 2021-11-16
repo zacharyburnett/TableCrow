@@ -1,5 +1,5 @@
-tablecrow.utilities
-===================
+Utilities
+=========
 
 .. automodule:: tablecrow.utilities
    :members:

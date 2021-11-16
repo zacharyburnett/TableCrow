@@ -1,8 +1,5 @@
-tablecrow
-=========
-
-tablecrow.connect
------------------
+``tablecrow.connect()``
+=======================
 
 .. automodule:: tablecrow.connect
    :members:

@@ -1,24 +1,24 @@
-tablecrow.tables
-================
+Tables
+======
 
-tablecrow.tables.postgres
--------------------------
+PostGreSQL
+----------
 
 .. automodule:: tablecrow.tables.postgres
    :members:
    :undoc-members:
    :show-inheritance:
 
-tablecrow.tables.sqlite
------------------------
+SQLite
+------
 
 .. automodule:: tablecrow.tables.sqlite
    :members:
    :undoc-members:
    :show-inheritance:
 
-tablecrow.tables.base
----------------------
+abstract classes
+----------------
 
 .. automodule:: tablecrow.tables.base
    :members:

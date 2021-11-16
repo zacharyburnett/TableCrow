@@ -32,7 +32,7 @@ def connect(
     """
     the main connection function for connecting to an arbitrary database table
 
-    `tablecrow.connect()` will return TableCrow table(s) based on the given connection parameters
+    ``tablecrow.connect()`` will return TableCrow table(s) based on the given connection parameters
 
     :param resource: location of database
     :param table_names: names of tables to connect to
