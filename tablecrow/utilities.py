@@ -139,7 +139,9 @@ def guard_generic_alias(generic_alias) -> type:
                 members = [members]
         else:
             members = ()
-    elif isinstance(generic_alias, Collection):
+    elif isinstance(generic_alias, Collection) and not isinstance(
+        generic_alias, (EnumMeta, str)
+    ):
         type_class = generic_alias.__class__
         if issubclass(type_class, Mapping):
             members = generic_alias.items()
@@ -149,17 +151,20 @@ def guard_generic_alias(generic_alias) -> type:
         return generic_alias
 
     members = [guard_generic_alias(member) for member in members]
-    return type_class(members)
+    if type_class != generic_alias.__class__ or members != generic_alias:
+        return type_class(members)
+    else:
+        return generic_alias
 
 
 def convert_value(value: Any, to_type: type) -> Any:
     if isinstance(to_type, str):
         to_type = eval(to_type)
 
-    to_type = guard_generic_alias(to_type)
-
     if isinstance(value, Enum):
         value = value.name
+
+    to_type = guard_generic_alias(to_type)
 
     if to_type is None:
         value = None
