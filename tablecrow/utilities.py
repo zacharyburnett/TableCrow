@@ -119,12 +119,37 @@ def guard_generic_alias(generic_alias) -> type:
     >>> guard_generic_alias(List[str])
     [str]
 
+    :example:
+    >>> from typing import Dict
+    >>> guard_generic_alias(Dict[str, float])
+    {str: float}
+
+    :example:
+    >>> from typing import Dict, Tuple
+    >>> guard_generic_alias({str: (Dict[int, str], str)})
+    {str: ({int: str}, str)}
+
     """
 
     if hasattr(generic_alias, '__origin__'):
-        generic_alias = generic_alias.__origin__(generic_alias.__args__)
+        type_class = generic_alias.__origin__
+        if hasattr(generic_alias, '__args__'):
+            members = generic_alias.__args__
+            if issubclass(type_class, Mapping):
+                members = [members]
+        else:
+            members = ()
+    elif isinstance(generic_alias, Collection):
+        type_class = generic_alias.__class__
+        if issubclass(type_class, Mapping):
+            members = generic_alias.items()
+        else:
+            members = generic_alias
+    else:
+        return generic_alias
 
-    return generic_alias
+    members = [guard_generic_alias(member) for member in members]
+    return type_class(members)
 
 
 def convert_value(value: Any, to_type: type) -> Any:

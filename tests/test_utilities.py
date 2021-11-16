@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
+from typing import Dict, List, Tuple
 
 from pyproj import CRS
 import pytest
 from shapely.geometry import LineString, MultiPoint, Point, Polygon
 
-from tablecrow.utilities import convert_value
+from tablecrow.utilities import convert_value, guard_generic_alias
 
 DATA_DIRECTORY = Path(__file__).parent / 'data'
 INPUT_DIRECTORY = DATA_DIRECTORY / 'input'
@@ -214,3 +215,31 @@ def test_convert_value():
     assert geometry_3 == MultiPoint([(0, 1), (1, 1), (1, 0), (0, 0)])
     assert geometry_4 == LineString([(0, 1), (1, 1), (1, 0), (0, 0)])
     assert geometry_5 == Polygon([(0, 1), (1, 1), (1, 0), (0, 0)])
+
+
+def test_guard_generic_alias():
+    simple_type_1 = guard_generic_alias(List)
+    simple_type_2 = guard_generic_alias(Tuple)
+    simple_type_3 = guard_generic_alias(Dict)
+
+    subscripted_type_1 = guard_generic_alias(List[str])
+    subscripted_type_2 = guard_generic_alias(Tuple[str, float])
+    subscripted_type_3 = guard_generic_alias(Dict[str, int])
+
+    mixed_type_1 = guard_generic_alias([str])
+    mixed_type_2 = guard_generic_alias([Tuple[float, List[int]]])
+    mixed_type_3 = guard_generic_alias({str: Tuple[str, int]})
+    mixed_type_4 = guard_generic_alias({str: (Dict[int, str], str)})
+
+    assert simple_type_1 == []
+    assert simple_type_2 == ()
+    assert simple_type_3 == {}
+
+    assert subscripted_type_1 == [str]
+    assert subscripted_type_2 == (str, float)
+    assert subscripted_type_3 == {str: int}
+
+    assert mixed_type_1 == [str]
+    assert mixed_type_2 == [(float, [int])]
+    assert mixed_type_3 == {str: (str, int)}
+    assert mixed_type_4 == {str: ({int: str}, str)}
