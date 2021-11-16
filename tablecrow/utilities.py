@@ -111,20 +111,18 @@ def parse_hostname(hostname: str) -> Dict[str, str]:
 def guard_generic_alias(generic_alias) -> type:
     """
     convert an instance of a subscripted `typing._GenericAlias` to a subscripted type
+
     :param generic_alias: generic alias
     :return: type
 
-    :example:
     >>> from typing import List
     >>> guard_generic_alias(List[str])
     [str]
 
-    :example:
     >>> from typing import Dict
     >>> guard_generic_alias(Dict[str, float])
     {str: float}
 
-    :example:
     >>> from typing import Dict, Tuple
     >>> guard_generic_alias({str: (Dict[int, str], str)})
     {str: ({int: str}, str)}

@@ -36,12 +36,11 @@ def connect(
     :param table_names: names of tables to connect to
     :return: list of tables
 
-    :example:
-    list all tables in a SQLite database file
+    >>> # list all tables in a SQLite database file
     >>> sqlite_tables = connect('~/test_database.db')
 
-    connect to a PostGres database table
-    >>> postgres_table = connect('https://user:password@test.com/database:5432', database='postgres', table_name='test_table')
+    >>> # connect to a PostGres database table
+    >>> postgres_table = connect('https://user:password@test.com/database:5432', database='postgres', table_names=['test_table'])
     """
 
     if table_names is None:

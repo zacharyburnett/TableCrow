@@ -50,7 +50,7 @@ sqlite_tables = tablecrow.connect(
 postgres_table = tablecrow.connect(
     'https://user:password@test.com/database:5432',
     database='postgres',
-    table_name='test_table',
+    table_names=['test_table'],
 )
 ```
 
