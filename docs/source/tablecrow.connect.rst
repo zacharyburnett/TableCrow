@@ -2,6 +2,3 @@
 =======================
 
 .. automodule:: tablecrow.connect
-   :members:
-   :undoc-members:
-   :show-inheritance:
