@@ -31,6 +31,7 @@ setup(
         'shapely',
         'spatialite',
         'sshtunnel',
+        'typepigeon',
     ],
     extras_require={
         'testing': ['pytest', 'pytest-cov', 'pytest-xdist'],

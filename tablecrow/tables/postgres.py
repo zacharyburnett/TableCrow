@@ -12,10 +12,11 @@ from psycopg2._psycopg import connection
 from pyproj import CRS
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry, GEOMETRY_TYPES
 from sshtunnel import SSHTunnelForwarder
+from typepigeon import guard_generic_alias
 
 from tablecrow.tables.base import DatabaseTable, parse_record_values, random_open_tcp_port
 
-from ..utilities import guard_generic_alias, parse_hostname, split_hostname_port
+from ..utilities import parse_hostname, split_hostname_port
 
 SSH_DEFAULT_PORT = 22
 

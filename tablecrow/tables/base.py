@@ -8,8 +8,9 @@ from typing import Any, Dict, Generator, List, Mapping, Sequence, Union
 from pyproj import CRS
 from shapely.geometry import LinearRing, MultiPolygon, Polygon
 from shapely.geometry.base import BaseGeometry, GEOMETRY_TYPES
+from typepigeon import convert_value
 
-from tablecrow.utilities import convert_value, get_logger, parse_hostname
+from tablecrow.utilities import get_logger, parse_hostname
 
 DEFAULT_CRS = CRS.from_epsg(4326)
 
