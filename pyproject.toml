@@ -1,12 +1,12 @@
 [tool.poetry]
-name = 'coupledmodeldriver'
+name = 'tablecrow'
 version = '0.0.0'
-description = 'coupled model configuration generation'
+description = 'abstract interface with remote database table'
 authors = ['Zach Burnett <zachary.r.burnett@gmail.com>']
-license = 'CC0-1.0'
+license = 'GPL-3.0-or-later'
 readme = 'README.md'
-repository = 'https://github.com/noaa-ocs-modeling/CoupledModelDriver.git'
-documentation = 'https://coupledmodeldriver.readthedocs.io'
+repository = 'https://github.com/zacharyburnett/TableCrow'
+documentation = 'https://tablecrow.readthedocs.io'
 
 [build-system]
 requires = [
