@@ -58,12 +58,17 @@ jobs:
         with:
           path: ${{ env.pythonLocation }}
           key: test-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}
+      - name: install dependencies on Linux
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+          sudo apt install libsqlite3-mod-spatialite
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
       - name: install dependencies
+        run: pip install ".[testing]"
+      - name: run tests
         env:
           POSTGRES_HOSTNAME: localhost
           POSTGRES_DATABASE: test_database
           POSTGRES_USERNAME: postgres
           POSTGRES_PASSWORD: test_password
-        run: pip install ".[testing]"
-      - name: run tests
         run: pytest --numprocesses auto

@@ -37,34 +37,9 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: lint with oitnb
         run: oitnb . --check
-  test_without_PostGreSQL:
+  test:
     needs: lint
-    name: test without PostGreSQL database
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ macos-latest, windows-latest ]
-        python-version: [ '3.8', '3.9', '3.x' ]
-    steps:
-      - name: clone repository
-        uses: actions/checkout@v2
-      - name: install Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: load cached Python installation
-        id: cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.pythonLocation }}
-          key: test-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}
-      - name: install dependencies
-        run: pip install ".[testing]"
-      - name: run tests
-        run: pytest --numprocesses auto
-  test_with_PostGreSQL:
-    needs: lint
-    name: test with PostGreSQL database
+    name: test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -92,6 +67,11 @@ jobs:
         with:
           path: ${{ env.pythonLocation }}
           key: test-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}
+      - name: install dependencies on Linux
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+          sudo apt install libsqlite3-mod-spatialite
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
       - name: install dependencies
         run: pip install ".[testing]"
       - name: run tests
@@ -125,6 +105,11 @@ jobs:
         with:
           path: ${{ env.pythonLocation }}
           key: test-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}
+      - name: install dependencies on Linux
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+          sudo apt install libsqlite3-mod-spatialite
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
       - name: install dependencies
         run: pip install ".[testing]"
       - name: run tests with coverage
