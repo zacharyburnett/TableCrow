@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - '**.py'
-      - '.github/workflows/tests_simple.yml'
+      - '.github/workflows/quick_tests.yml'
       - 'pyproject.toml'
 
 jobs:
