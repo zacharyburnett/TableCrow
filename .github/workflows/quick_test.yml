@@ -38,6 +38,15 @@ jobs:
     needs: lint
     name: quick test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:13-3.1
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_database
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - name: clone repository
         uses: actions/checkout@v2
@@ -50,6 +59,11 @@ jobs:
           path: ${{ env.pythonLocation }}
           key: test-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}
       - name: install dependencies
+        env:
+          POSTGRES_HOSTNAME: localhost
+          POSTGRES_DATABASE: test_database
+          POSTGRES_USERNAME: postgres
+          POSTGRES_PASSWORD: test_password
         run: pip install ".[testing]"
       - name: run tests
         run: pytest --numprocesses auto

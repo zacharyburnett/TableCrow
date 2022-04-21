@@ -128,7 +128,6 @@ jobs:
       - name: install dependencies
         run: pip install ".[testing]"
       - name: run tests with coverage
-        if: matrix.python-version == '3.x' && matrix.os == 'ubuntu-latest'
         env:
           POSTGRES_HOSTNAME: localhost
           POSTGRES_DATABASE: test_database
