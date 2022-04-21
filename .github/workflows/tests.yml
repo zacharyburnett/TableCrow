@@ -82,7 +82,7 @@ jobs:
           POSTGRES_PASSWORD: test_password
         run: pytest --numprocesses auto
   test_with_coverage:
-    needs: [ lint, test_without_PostGreSQL, test_with_PostGreSQL ]
+    needs: [ lint, test ]
     name: test with coverage
     runs-on: ubuntu-latest
     services:
