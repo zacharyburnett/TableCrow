@@ -1,14 +1,50 @@
 name: tests
 
-on: [ push ]
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.py'
+      - '.github/workflows/tests.yml'
+      - 'pyproject.toml'
+  pull_request:
+    branches:
+      - main
 
 jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
+    steps:
+      - name: clone repository
+        uses: actions/checkout@v2
+      - name: install Python
+        uses: actions/setup-python@v2
+      - name: load cached Python installation
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: lint-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}
+      - name: install linters
+        run: pip install flake8 oitnb
+      - name: lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: lint with oitnb
+        run: oitnb . --check
+  test_without_PostGreSQL:
+    needs: lint
+    name: test without PostGreSQL database
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [ '3.x' ]
+        os: [ macos-latest, windows-latest ]
+        python-version: [ '3.8', '3.9', '3.x' ]
     steps:
       - name: clone repository
         uses: actions/checkout@v2
@@ -21,24 +57,19 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: lint-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml', 'setup.*') }}
+          key: test-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}
       - name: install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: pip install ".[development]"
-      - name: lint with flake8
-        run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-  test:
+        run: pip install ".[testing]"
+      - name: run tests
+        run: pytest --numprocesses auto
+  test_with_PostGreSQL:
     needs: lint
-    name: test
+    name: test with PostGreSQL database
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        python-version: [ '3.8', '3.x' ]
+        python-version: [ '3.8', '3.9', '3.x' ]
     services:
       postgres:
         image: postgis/postgis:13-3.1
@@ -60,23 +91,42 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: test-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml', 'setup.*') }}
-      - name: install dependencies on Linux
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-          sudo apt install libsqlite3-mod-spatialite
-          sudo ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
+          key: test-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}
       - name: install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
         run: pip install ".[testing]"
       - name: run tests
-        if: matrix.python-version != '3.x' || matrix.os != 'ubuntu-latest'
         env:
           POSTGRES_HOSTNAME: localhost
           POSTGRES_DATABASE: test_database
           POSTGRES_USERNAME: postgres
           POSTGRES_PASSWORD: test_password
         run: pytest --numprocesses auto
+  test_with_coverage:
+    needs: [ lint, test_without_PostGreSQL, test_with_PostGreSQL ]
+    name: test with coverage
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:13-3.1
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_database
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - name: clone repository
+        uses: actions/checkout@v2
+      - name: install Python
+        uses: actions/setup-python@v2
+      - name: load cached Python installation
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: test-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}
+      - name: install dependencies
+        run: pip install ".[testing]"
       - name: run tests with coverage
         if: matrix.python-version == '3.x' && matrix.os == 'ubuntu-latest'
         env:
@@ -85,8 +135,9 @@ jobs:
           POSTGRES_USERNAME: postgres
           POSTGRES_PASSWORD: test_password
         run: pytest --numprocesses auto --cov . --cov-report xml:coverage.xml
+      - name: show coverage report
+        run: coverage report
       - name: upload coverage to Codecov
-        if: matrix.python-version == '3.x' && matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v2.1.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
