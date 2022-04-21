@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from functools import partial
 import os
+from typing import Dict
 
 import psycopg2
 from pyproj import CRS
@@ -15,79 +16,67 @@ from tablecrow.tables.postgres import (
     database_table_fields,
     SSH_DEFAULT_PORT,
 )
-from tablecrow.utilities import read_configuration, repository_root, split_hostname_port
-
-CREDENTIALS_FILENAME = repository_root() / 'credentials.config'
-CREDENTIALS = read_configuration(CREDENTIALS_FILENAME)
-
-if 'postgres' not in CREDENTIALS:
-    CREDENTIALS['postgres'] = {}
-
-default_credentials = {
-    'hostname': ('POSTGRES_HOSTNAME', 'localhost'),
-    'database': ('POSTGRES_DATABASE', 'postgres'),
-    'username': ('POSTGRES_USERNAME', 'postgres'),
-    'password': ('POSTGRES_PASSWORD', ''),
-    'ssh_hostname': ('SSH_HOSTNAME', None),
-    'ssh_username': ('SSH_USERNAME', None),
-    'ssh_password': ('SSH_PASSWORD', None),
-}
-
-for credential, details in default_credentials.items():
-    if credential not in CREDENTIALS['postgres']:
-        CREDENTIALS['postgres'][credential] = os.getenv(*details)
-
-if (
-    'ssh_hostname' in CREDENTIALS['postgres']
-    and CREDENTIALS['postgres']['ssh_hostname'] is not None
-):
-    hostname, port = split_hostname_port(CREDENTIALS['postgres']['hostname'])
-    if port is None:
-        port = PostGresTable.DEFAULT_PORT
-
-    ssh_hostname, ssh_port = split_hostname_port(CREDENTIALS['postgres']['ssh_hostname'])
-    if ssh_port is None:
-        ssh_port = SSH_DEFAULT_PORT
-
-    if '@' in ssh_hostname:
-        ssh_username, ssh_hostname = ssh_hostname.split('@', 1)
-
-    ssh_username = CREDENTIALS['postgres']['ssh_username']
-
-    if ssh_username is not None and ':' in ssh_username:
-        ssh_username, ssh_password = ssh_hostname.split(':', 1)
-
-    ssh_password = CREDENTIALS['postgres']['ssh_password']
-
-    TUNNEL = SSHTunnelForwarder(
-        (ssh_hostname, ssh_port),
-        ssh_username=ssh_username,
-        ssh_password=ssh_password,
-        remote_bind_address=('localhost', port),
-        local_bind_address=('localhost', random_open_tcp_port()),
-    )
-    TUNNEL.start()
-else:
-    TUNNEL = None
+from tablecrow.utilities import split_hostname_port
 
 
 @pytest.fixture
-def connection() -> psycopg2.connect:
-    hostname, port = split_hostname_port(CREDENTIALS['postgres']['hostname'])
+def credentials() -> Dict[str, str]:
+    credentials = {
+        'hostname': os.environ.get('POSTGRES_HOSTNAME', 'localhost'),
+        'port': os.environ.get('POSTGRES_PORT', 5432),
+        'database': os.environ.get('POSTGRES_DATABASE', 'postgres'),
+        'username': os.environ.get('POSTGRES_USERNAME', 'postgres'),
+        'password': os.environ.get('POSTGRES_PASSWORD', ''),
+    }
+
+    if 'SSH_HOSTNAME' in os.environ:
+        credentials.update(
+            {
+                'ssh_hostname': os.environ.get('SSH_HOSTNAME'),
+                'ssh_port': os.environ.get('SSH_PORT', SSH_DEFAULT_PORT),
+                'ssh_database': os.environ.get('SSH_DATABASE'),
+                'ssh_username': os.environ.get('SSH_USERNAME'),
+                'ssh_password': os.environ.get('SSH_PASSWORD'),
+            }
+        )
+
+    return credentials
+
+
+@pytest.fixture
+def tunnel(credentials) -> SSHTunnelForwarder:
+    if 'ssh_hostname' in credentials:
+        tunnel = SSHTunnelForwarder(
+            (credentials['ssh_hostname'], credentials['ssh_port']),
+            ssh_username=credentials['ssh_username'],
+            ssh_password=credentials['ssh_password'],
+            remote_bind_address=('localhost', credentials['port']),
+            local_bind_address=('localhost', random_open_tcp_port()),
+        )
+        tunnel.start()
+    else:
+        tunnel = None
+
+    return tunnel
+
+
+@pytest.fixture
+def connection(credentials, tunnel) -> psycopg2.connect:
+    hostname, port = split_hostname_port(credentials['hostname'])
     if port is None:
         port = PostGresTable.DEFAULT_PORT
 
     connector = partial(
         psycopg2.connect,
-        database=CREDENTIALS['postgres']['database'],
-        user=CREDENTIALS['postgres']['username'],
-        password=CREDENTIALS['postgres']['password'],
+        database=credentials['database'],
+        user=credentials['username'],
+        password=credentials['password'],
     )
-    if tunnel := TUNNEL is not None:
+    if tunnel is not None:
         try:
             tunnel.start()
-        except Exception as error:
-            raise ConnectionError(error)
+        except:
+            raise
         connection = connector(host=tunnel.local_bind_host, port=tunnel.local_bind_port)
     else:
         connection = connector(host=hostname, port=port)
@@ -95,7 +84,11 @@ def connection() -> psycopg2.connect:
     return connection
 
 
-def test_table_creation(connection):
+@pytest.mark.skipif(
+    'POSTGRES_HOSTNAME' not in os.environ,
+    reason='no environment variables set for connection information',
+)
+def test_table_creation(credentials, connection):
     table_name = 'test_table_creation'
 
     fields = {
@@ -114,10 +107,7 @@ def test_table_creation(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        table_name=table_name,
-        fields=fields,
-        primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        table_name=table_name, fields=fields, primary_key='primary_key_field', **credentials,
     )
 
     test_remote_fields = table.remote_fields
@@ -136,7 +126,11 @@ def test_table_creation(connection):
     assert not table_exists
 
 
-def test_compound_primary_key(connection):
+@pytest.mark.skipif(
+    'POSTGRES_HOSTNAME' not in os.environ,
+    reason='no environment variables set for connection information',
+)
+def test_compound_primary_key(credentials, connection):
     table_name = 'test_compound_primary_key'
 
     fields = {
@@ -186,10 +180,7 @@ def test_compound_primary_key(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        table_name=table_name,
-        fields=fields,
-        primary_key=primary_key,
-        **CREDENTIALS['postgres'],
+        table_name=table_name, fields=fields, primary_key=primary_key, **credentials,
     )
 
     test_primary_key = primary_key
@@ -217,7 +208,11 @@ def test_compound_primary_key(connection):
     assert sorted(test_raw_remote_fields) == sorted(fields)
 
 
-def test_record_insertion(connection):
+@pytest.mark.skipif(
+    'POSTGRES_HOSTNAME' not in os.environ,
+    reason='no environment variables set for connection information',
+)
+def test_record_insertion(credentials, connection):
     table_name = 'test_record_insertion'
 
     fields = {
@@ -245,10 +240,7 @@ def test_record_insertion(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        table_name=table_name,
-        fields=fields,
-        primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        table_name=table_name, fields=fields, primary_key='primary_key_field', **credentials,
     )
     table.insert(records)
     test_records_before_addition = table.records
@@ -286,7 +278,11 @@ def test_record_insertion(connection):
     assert test_records_after_deletion == records
 
 
-def test_table_flexibility(connection):
+@pytest.mark.skipif(
+    'POSTGRES_HOSTNAME' not in os.environ,
+    reason='no environment variables set for connection information',
+)
+def test_table_flexibility(credentials, connection):
     table_name = 'test_table_flexibility'
 
     fields = {
@@ -310,7 +306,7 @@ def test_table_flexibility(connection):
         table_name=table_name,
         fields=incomplete_fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **credentials,
     )
     incomplete_table.insert(records)
     incomplete_records = incomplete_table.records
@@ -321,10 +317,7 @@ def test_table_flexibility(connection):
 
     # create table with complete fields, pointing to existing remote table with incomplete fields
     complete_table = PostGresTable(
-        table_name=table_name,
-        fields=fields,
-        primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        table_name=table_name, fields=fields, primary_key='primary_key_field', **credentials,
     )
     complete_records = complete_table.records
 
@@ -337,7 +330,7 @@ def test_table_flexibility(connection):
         table_name=table_name,
         fields=incomplete_fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **credentials,
     )
     completed_records = completed_table.records
 
@@ -356,7 +349,11 @@ def test_table_flexibility(connection):
                 assert value == record[field]
 
 
-def test_list_type(connection):
+@pytest.mark.skipif(
+    'POSTGRES_HOSTNAME' not in os.environ,
+    reason='no environment variables set for connection information',
+)
+def test_list_type(credentials, connection):
     table_name = 'test_list_type'
 
     fields = {'primary_key_field': int, 'field_1': [str], 'field_2': tuple([str])}
@@ -373,10 +370,7 @@ def test_list_type(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        table_name=table_name,
-        fields=fields,
-        primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        table_name=table_name, fields=fields, primary_key='primary_key_field', **credentials,
     )
 
     table.insert(records)
@@ -399,7 +393,11 @@ def test_list_type(connection):
     assert test_record_query_2 == records[:2]
 
 
-def test_records_where(connection):
+@pytest.mark.skipif(
+    'POSTGRES_HOSTNAME' not in os.environ,
+    reason='no environment variables set for connection information',
+)
+def test_records_where(credentials, connection):
     table_name = 'test_records_where'
 
     fields = {'primary_key_field': int, 'field_1': datetime, 'field_2': str}
@@ -417,10 +415,7 @@ def test_records_where(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        table_name=table_name,
-        fields=fields,
-        primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        table_name=table_name, fields=fields, primary_key='primary_key_field', **credentials,
     )
 
     table.insert(records)
@@ -461,7 +456,11 @@ def test_records_where(connection):
     assert test_records_after_deletion == records[1:]
 
 
-def test_field_reorder(connection):
+@pytest.mark.skipif(
+    'POSTGRES_HOSTNAME' not in os.environ,
+    reason='no environment variables set for connection information',
+)
+def test_field_reorder(credentials, connection):
     table_name = 'test_field_reorder'
 
     fields = {
@@ -495,10 +494,7 @@ def test_field_reorder(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        table_name=table_name,
-        fields=fields,
-        primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        table_name=table_name, fields=fields, primary_key='primary_key_field', **credentials,
     )
     table.insert(records)
     test_records = table.records
@@ -511,7 +507,7 @@ def test_field_reorder(connection):
         table_name=table_name,
         fields=reordered_fields,
         primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        **credentials,
     )
     test_reordered_records = reordered_table.records
 
@@ -530,7 +526,11 @@ def test_field_reorder(connection):
                 assert test_record[field] == value
 
 
-def test_nonexistent_field_in_inserted_record(connection):
+@pytest.mark.skipif(
+    'POSTGRES_HOSTNAME' not in os.environ,
+    reason='no environment variables set for connection information',
+)
+def test_nonexistent_field_in_inserted_record(credentials, connection):
     table_name = 'test_nonexistent_field_in_inserted_record'
 
     fields = {
@@ -552,10 +552,7 @@ def test_nonexistent_field_in_inserted_record(connection):
                 cursor.execute(f'DROP TABLE {table_name};')
 
     table = PostGresTable(
-        table_name=table_name,
-        fields=fields,
-        primary_key='primary_key_field',
-        **CREDENTIALS['postgres'],
+        table_name=table_name, fields=fields, primary_key='primary_key_field', **credentials,
     )
     table[record_with_extra_field['primary_key_field']] = record_with_extra_field
     test_records = table.records
@@ -571,7 +568,11 @@ def test_nonexistent_field_in_inserted_record(connection):
     assert test_records == [record_with_extra_field]
 
 
-def test_missing_crs(connection):
+@pytest.mark.skipif(
+    'POSTGRES_HOSTNAME' not in os.environ,
+    reason='no environment variables set for connection information',
+)
+def test_missing_crs(credentials, connection):
     table_name = 'test_missing_crs'
 
     fields = {
@@ -586,13 +587,17 @@ def test_missing_crs(connection):
         fields=fields,
         primary_key='primary_key_field',
         crs=None,
-        **CREDENTIALS['postgres'],
+        **credentials,
     )
 
     assert table.crs == DEFAULT_CRS
 
 
-def test_records_intersecting_polygon(connection):
+@pytest.mark.skipif(
+    'POSTGRES_HOSTNAME' not in os.environ,
+    reason='no environment variables set for connection information',
+)
+def test_records_intersecting_polygon(credentials, connection):
     table_name = 'test_records_intersecting_polygon'
 
     fields = {
@@ -642,7 +647,7 @@ def test_records_intersecting_polygon(connection):
         fields=fields,
         primary_key='primary_key_field',
         crs=crs,
-        **CREDENTIALS['postgres'],
+        **credentials,
     )
     table.insert(records)
 
