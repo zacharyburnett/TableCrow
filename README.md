@@ -5,7 +5,7 @@
 [![build](https://github.com/zacharyburnett/TableCrow/workflows/build/badge.svg)](https://github.com/zacharyburnett/TableCrow/actions?query=workflow%3Abuild)
 [![version](https://img.shields.io/pypi/v/tablecrow)](https://pypi.org/project/tablecrow)
 [![license](https://img.shields.io/github/license/zacharyburnett/tablecrow)](https://opensource.org/licenses/MIT)
-[![style](https://sourceforge.net/p/oitnb/code/ci/default/tree/_doc/_static/oitnb.svg?format=raw)](https://sourceforge.net/p/oitnb/code)
+[![style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
 
 `tablecrow` is an abstraction over a generalized database table. Currently, `tablecrow` offers an abstraction for PostGreSQL and SQLite tables with
 simple PostGIS and SpatiaLite operations.

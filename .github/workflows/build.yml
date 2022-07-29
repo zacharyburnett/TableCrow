@@ -6,62 +6,44 @@ on:
       - published
 
 jobs:
-  build_wheels:
-    name: build wheel
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest ]
-        python-version: [ '3.x' ]
+  build:
+    name: build package
+    runs-on: ubuntu-latest
     steps:
-      - name: checkout repository
-        uses: actions/checkout@v2
-      - name: install Python
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@main
+      - uses: actions/setup-python@main
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: load cached Python installation
-        id: cache
-        uses: actions/cache@v2
+          python-version: '3.x'
+      - uses: actions/cache@main
         with:
           path: ${{ env.pythonLocation }}
           key: build-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml', 'setup.*') }}
-      - name: build wheel
-        run: pip wheel . -w dist --no-deps
-      - name: save wheel
-        uses: actions/upload-artifact@v2
+      - run: pip wheel . --no-deps -w dist
+      - uses: actions/upload-artifact@main
         with:
-          name: build
-          path: ./dist/*.whl
-  build_sdist:
-    name: package source
+          name: package
+          path: dist/
+      - uses: xresloader/upload-to-github-release@main
+        with:
+          file: "dist/*"
+  publish:
+    name: publish package
+    needs: [ build ]
     runs-on: ubuntu-latest
     steps:
-      - name: checkout repository
-        uses: actions/checkout@v2
-      - name: install Python
-        uses: actions/setup-python@v2
-      - name: install dependencies
-        run: pip install dunamai
-      - name: package source
-        run: python setup.py sdist
-      - name: save source package
-        uses: actions/upload-artifact@v2
+      - uses: actions/checkout@main
+      - uses: actions/setup-python@main
         with:
-          name: build
-          path: ./dist/*.tar.gz
-  upload_pypi:
-    name: publish to PyPI
-    needs: [ build_wheels, build_sdist ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: retrieve wheel(s) and source
-        uses: actions/download-artifact@v2
+          python-version: '3.x'
+      - uses: actions/cache@main
         with:
-          name: build
-          path: dist
-      - name: upload wheel(s) and source
-        uses: pypa/gh-action-pypi-publish@v1.5.0
+          path: ${{ env.pythonLocation }}
+          key: build-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml', 'setup.*') }}
+      - uses: actions/download-artifact@main
+        with:
+          name: package
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
