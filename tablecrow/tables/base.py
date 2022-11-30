@@ -55,7 +55,7 @@ class DatabaseTable(ABC):
         self.__fields = fields
 
         if logger is None:
-            logger = get_logger('dummy', console_level=logging.NOTSET)
+            logger = get_logger("dummy", console_level=logging.NOTSET)
 
         self.logger = logger
 
@@ -64,22 +64,22 @@ class DatabaseTable(ABC):
                 port = None
             else:
                 credentials = parse_hostname(resource)
-                resource = credentials['hostname']
-                port = credentials['port']
+                resource = credentials["hostname"]
+                port = credentials["port"]
                 if port is None:
                     port = self.DEFAULT_PORT
                 if username is None:
-                    username = credentials['username']
+                    username = credentials["username"]
                 if password is None:
-                    password = credentials['password']
+                    password = credentials["password"]
         else:
             port = None
 
         self.__resource = resource
         self.__port = port
 
-        if username is not None and ':' in username:
-            username, password = username.split(':', 1)
+        if username is not None and ":" in username:
+            username, password = username.split(":", 1)
 
         self.__username = username
         self.__password = password
@@ -96,7 +96,7 @@ class DatabaseTable(ABC):
         elif len(self.geometry_fields) > 0:
             crs = DEFAULT_CRS
             self.logger.warning(
-                f'no CRS provided for geometry fields; defaulting to EPSG:{crs.to_epsg()}'
+                f"no CRS provided for geometry fields; defaulting to EPSG:{crs.to_epsg()}"
             )
         else:
             crs = None
@@ -158,33 +158,38 @@ class DatabaseTable(ABC):
     @property
     @abstractmethod
     def schema(self) -> str:
-        """ SQL schema string """
+        """SQL schema string"""
         raise NotImplementedError
 
     @property
     def geometry_fields(self) -> Dict[str, type]:
-        """ local fields with geometry type """
+        """local fields with geometry type"""
         geometry_fields = {}
         if self.fields is not None:
             for field, field_type in self.fields.items():
-                while isinstance(field_type, Sequence) and not isinstance(field_type, str):
+                while isinstance(field_type, Sequence) and not isinstance(
+                    field_type, str
+                ):
                     if len(field_type) > 0:
                         field_type = field_type[0]
                     else:
                         field_type = list
-                if isinstance(field_type, type) and field_type.__name__ in GEOMETRY_TYPES:
+                if (
+                    isinstance(field_type, type)
+                    and field_type.__name__ in GEOMETRY_TYPES
+                ):
                     geometry_fields[field] = field_type
         return geometry_fields
 
     @property
     @abstractmethod
     def remote_fields(self) -> Dict[str, type]:
-        """ fields at remote table """
+        """fields at remote table"""
         raise NotImplementedError
 
     @property
     def connected(self) -> bool:
-        """ whether network connection exists to database server """
+        """whether network connection exists to database server"""
         try:
             socket.setdefaulttimeout(2)
             socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(
@@ -196,7 +201,7 @@ class DatabaseTable(ABC):
 
     @property
     def records(self) -> List[Dict[str, Any]]:
-        """ list of records in the table """
+        """list of records in the table"""
         return self.records_where(None)
 
     @abstractmethod
@@ -250,12 +255,14 @@ class DatabaseTable(ABC):
             elif not isinstance(key, Sequence) or isinstance(key, str):
                 key = [key]
             if len(key) != len(self.primary_key):
-                raise ValueError(f'ambiguous value for primary key "{self.primary_key}"')
+                raise ValueError(
+                    f'ambiguous value for primary key "{self.primary_key}"'
+                )
             where = {field: key[index] for index, field in enumerate(self.primary_key)}
 
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
+                f"no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}"
             )
 
         try:
@@ -263,7 +270,7 @@ class DatabaseTable(ABC):
 
             if len(records) > 1:
                 self.logger.warning(
-                    f'found more than one record matching query {where}: {records}'
+                    f"found more than one record matching query {where}: {records}"
                 )
 
             if len(records) > 0:
@@ -295,7 +302,7 @@ class DatabaseTable(ABC):
 
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
+                f"no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}"
             )
 
         self.insert([record])
@@ -317,12 +324,14 @@ class DatabaseTable(ABC):
             elif not isinstance(key, Sequence) or isinstance(key, str):
                 key = [key]
             if len(key) != len(self.primary_key):
-                raise ValueError(f'ambiguous value for primary key "{self.primary_key}"')
+                raise ValueError(
+                    f'ambiguous value for primary key "{self.primary_key}"'
+                )
             where = {field: key[index] for index, field in enumerate(self.primary_key)}
 
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
+                f"no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}"
             )
 
         try:
@@ -336,7 +345,7 @@ class DatabaseTable(ABC):
     def __contains__(self, key: Any) -> bool:
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}'
+                f"no connection to {self.username}@{self.resource}:{self.port}/{self.database}/{self.name}"
             )
 
         try:
@@ -354,7 +363,7 @@ class DatabaseTable(ABC):
 
     def __repr__(self) -> str:
         return (
-            f'{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, {repr(self.fields)}, {repr(self.primary_key)}, '
+            f"{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, {repr(self.fields)}, {repr(self.primary_key)}, "
             f'{repr(self.resource)}, {repr(self.username)}, {repr("*" * len(self.password))}, {repr(self.users)})'
         )
 
@@ -365,7 +374,7 @@ def random_open_tcp_port() -> int:
     """
 
     open_socket = socket.socket()
-    open_socket.bind(('', 0))
+    open_socket.bind(("", 0))
     return open_socket.getsockname()[1]
 
 
@@ -388,7 +397,7 @@ def is_compound_crs(crs: CRS) -> bool:
 
     if not isinstance(crs, CRS):
         crs = parse_crs(crs)
-    return 'COMPD_CS' in crs.wkt or 'COMPOUNDCRS' in crs.wkt
+    return "COMPD_CS" in crs.wkt or "COMPOUNDCRS" in crs.wkt
 
 
 def split_compound_crs(crs: CRS) -> List[CRS]:
@@ -406,16 +415,16 @@ def split_compound_crs(crs: CRS) -> List[CRS]:
         working_string = crs.wkt
 
         # remove the compound CRS keyword and name from the string, along with the closing bracket
-        working_string = working_string.split(',', 1)[-1][:-1]
+        working_string = working_string.split(",", 1)[-1][:-1]
 
         wkts = []
         while len(working_string) > 0:
             opening_brackets = 0
             closing_brackets = 0
             for index, character in enumerate(working_string):
-                if character == '[':
+                if character == "[":
                     opening_brackets += 1
-                elif character == ']':
+                elif character == "]":
                     closing_brackets += 1
 
                 if opening_brackets > 0 and opening_brackets == closing_brackets:
@@ -441,10 +450,12 @@ def compound_crs(crs_list: List[CRS], key: str = None) -> CRS:
     crs_list = [crs if type(crs) is CRS else parse_crs(crs) for crs in crs_list]
 
     if key is None:
-        key = ' + '.join(crs_key(crs) for crs in crs_list)
+        key = " + ".join(crs_key(crs) for crs in crs_list)
 
     # TODO is keyword specced as COMPOUNDCRS?
-    return CRS.from_string(f'COMPD_CS["{key}", {", ".join(crs.wkt for crs in crs_list)}]')
+    return CRS.from_string(
+        f'COMPD_CS["{key}", {", ".join(crs.wkt for crs in crs_list)}]'
+    )
 
 
 def parse_crs(crs: Union[str, int]) -> CRS:
@@ -459,11 +470,13 @@ def parse_crs(crs: Union[str, int]) -> CRS:
         return crs
     elif (
         isinstance(crs, str)
-        and '+' in crs
-        and 'COMPD_CS' not in crs
-        and 'COMPOUNDCRS' not in crs
+        and "+" in crs
+        and "COMPD_CS" not in crs
+        and "COMPOUNDCRS" not in crs
     ):
-        return compound_crs([parse_crs(crs_part.strip()) for crs_part in crs.split('+')])
+        return compound_crs(
+            [parse_crs(crs_part.strip()) for crs_part in crs.split("+")]
+        )
     else:
         try:
             return CRS.from_epsg(int(crs))
@@ -480,9 +493,11 @@ def flatten_geometry(geometry: BaseGeometry) -> BaseGeometry:
     geometry_type = type(geometry)
 
     # strip 3rd dimension
-    if 'POLYGON Z' in geometry.wkt:
+    if "POLYGON Z" in geometry.wkt:
         polygons = (
-            [polygon for polygon in geometry] if geometry_type is MultiPolygon else [geometry]
+            [polygon for polygon in geometry]
+            if geometry_type is MultiPolygon
+            else [geometry]
         )
         for polygon_index, polygon in enumerate(polygons):
             exterior_2d = LinearRing([vertex[:2] for vertex in polygon.exterior.coords])
@@ -492,7 +507,9 @@ def flatten_geometry(geometry: BaseGeometry) -> BaseGeometry:
             ]
             polygons[polygon_index] = Polygon(exterior_2d, interiors_2d)
         geometry = (
-            MultiPolygon(polygons) if geometry_type is MultiPolygon else Polygon(polygons[0])
+            MultiPolygon(polygons)
+            if geometry_type is MultiPolygon
+            else Polygon(polygons[0])
         )
 
     if not geometry.is_valid:

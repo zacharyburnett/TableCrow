@@ -20,7 +20,7 @@ def read_configuration(filename: PathLike) -> Dict[str, str]:
     return {
         section_name: {key: value for key, value in section.items()}
         for section_name, section in configuration_file.items()
-        if section_name.upper() != 'DEFAULT'
+        if section_name.upper() != "DEFAULT"
     }
 
 
@@ -38,7 +38,7 @@ def repository_root(path: PathLike = None) -> Path:
         path = Path(path)
     if path.is_file():
         path = path.parent
-    if '.git' in (child.name for child in path.iterdir()) or path == path.parent:
+    if ".git" in (child.name for child in path.iterdir()) or path == path.parent:
         return path
     else:
         return repository_root(path.parent)
@@ -54,8 +54,8 @@ def split_hostname_port(hostname: str) -> (str, Union[str, None]):
 
     port = None
 
-    if ':' in hostname:
-        parts = hostname.rsplit(':', 1)
+    if ":" in hostname:
+        parts = hostname.rsplit(":", 1)
         try:
             port = int(parts[-1])
             hostname = parts[0]
@@ -78,24 +78,24 @@ def parse_hostname(hostname: str) -> Dict[str, str]:
 
     hostname, port = split_hostname_port(hostname)
 
-    protocol_pattern = re.compile(r'^(?:http|ftp)s?://')
+    protocol_pattern = re.compile(r"^(?:http|ftp)s?://")
     result = re.search(protocol_pattern, hostname)
-    protocol = result.group(0) if result is not None else ''
-    hostname = re.sub(protocol_pattern, '', hostname)
+    protocol = result.group(0) if result is not None else ""
+    hostname = re.sub(protocol_pattern, "", hostname)
 
-    if '@' in hostname:
-        username, hostname = hostname.split('@', 1)
+    if "@" in hostname:
+        username, hostname = hostname.split("@", 1)
 
     hostname = protocol + hostname
 
-    if username is not None and ':' in username:
-        username, password = username.split(':', 1)
+    if username is not None and ":" in username:
+        username, password = username.split(":", 1)
 
     return {
-        'hostname': hostname,
-        'port': port,
-        'username': username,
-        'password': password,
+        "hostname": hostname,
+        "port": port,
+        "username": username,
+        "password": password,
     }
 
 
@@ -115,8 +115,8 @@ def get_logger(
     # check if logger is already configured
     if logger.level == logging.NOTSET and len(logger.handlers) == 0:
         # check if logger has a parent
-        if '.' in name:
-            logger.parent = get_logger(name.rsplit('.', 1)[0])
+        if "." in name:
+            logger.parent = get_logger(name.rsplit(".", 1)[0])
         else:
             # otherwise create a new split-console logger
             logger.setLevel(logging.DEBUG)
@@ -143,13 +143,15 @@ def get_logger(
         file_handler = logging.FileHandler(log_filename)
         file_handler.setLevel(file_level)
         for existing_file_handler in [
-            handler for handler in logger.handlers if type(handler) is logging.FileHandler
+            handler
+            for handler in logger.handlers
+            if type(handler) is logging.FileHandler
         ]:
             logger.removeHandler(existing_file_handler)
         logger.addHandler(file_handler)
 
     if log_format is None:
-        log_format = '%(asctime)s | %(levelname)-8s | %(message)s'
+        log_format = "%(asctime)s | %(levelname)-8s | %(message)s"
     log_formatter = logging.Formatter(log_format)
     for handler in logger.handlers:
         handler.setFormatter(log_formatter)

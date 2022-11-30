@@ -1,6 +1,47 @@
+[project]
+name = 'tablecrow'
+description = 'abstract interface with remote database table'
+authors = [{ name = 'Zach Burnett', email = 'zachary.r.burnett@gmail.com' }]
+readme = 'README.md'
+requires-python = '>=3.8'
+license = { file = 'LICENSE' }
+dependencies = [
+    'psycopg2-binary',
+    'pyproj',
+    'python-dateutil',
+    'shapely',
+    'spatialite',
+    'sshtunnel',
+    'typepigeon >=1.0.2'
+]
+dynamic = ['version']
+
+[project.optional-dependencies]
+test = [
+    'pytest',
+    'pytest-cov',
+    'pytest-xdist',
+]
+docs = [
+    'dunama',
+    'm2r2',
+    'sphinx',
+    'sphinx-rtd-theme',
+]
+
+[project.urls]
+repository = 'https://github.com/zacharyburnett/TableCrow.git'
+documentation = 'https://tablecrow.readthedocs.io'
+
 [build-system]
 requires = [
-    "dunamai",
-    "setuptools",
+    'setuptools >=61',
+    'setuptools_scm[toml] >=3.4',
+    'wheel',
 ]
-build-backend = "setuptools.build_meta"
+build-backend = 'setuptools.build_meta'
+
+[tool.setuptools_scm]
+
+[tool.ruff]
+ignore = ["E501", "E722"]

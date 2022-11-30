@@ -1,44 +1,70 @@
 name: tests
 
-on: [ push ]
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.py'
+      - '.github/workflows/tests.yml'
+      - 'pyproject.toml'
+      - 'tests/**'
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  lint:
-    name: lint
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [ '3.x' ]
-    steps:
-      - name: clone repository
-        uses: actions/checkout@v2
-      - name: install Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: load cached Python installation
-        id: cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.pythonLocation }}
-          key: lint-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml', 'setup.*') }}
-      - name: install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: pip install ".[development]"
-      - name: lint with flake8
-        run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-  test:
-    needs: lint
-    name: test
+  check:
+    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        toxenv: [ check-style ]
+        python-version: [ '3.x' ]
         os: [ ubuntu-latest ]
-        python-version: [ '3.8', '3.x' ]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'pyproject.toml'
+      - run: pip install tox
+      - run: tox -e ${{ matrix.toxenv }}
+  test:
+    name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    needs: [ check ]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        toxenv: [ test-xdist, test-spatial-xdist ]
+        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
+        os: [ ubuntu-latest, macos-latest ]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'pyproject.toml'
+      - run: pip install tox
+      - run: tox -e ${{ matrix.toxenv }}
+  test_with_coverage:
+    name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    needs: [ test ]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        toxenv: [ test-cov ]
+        python-version: [ '3.x' ]
+        os: [ ubuntu-latest ]
     services:
       postgres:
         image: postgis/postgis:13-3.1
@@ -49,46 +75,48 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
-      - name: clone repository
-        uses: actions/checkout@v2
-      - name: install Python
-        uses: actions/setup-python@v2
+      - run: |
+          sudo apt install libsqlite3-mod-spatialite 
+          ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: load cached Python installation
-        id: cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.pythonLocation }}
-          key: test-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml', 'setup.*') }}
-      - name: install dependencies on Linux
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-          sudo apt install libsqlite3-mod-spatialite
-          sudo ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
-      - name: install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: pip install ".[testing]"
-      - name: run tests
-        if: matrix.python-version != '3.x' || matrix.os != 'ubuntu-latest'
+          cache: 'pip'
+          cache-dependency-path: 'pyproject.toml'
+      - run: pip install tox
+      - run: tox -e ${{ matrix.toxenv }}
         env:
           POSTGRES_HOSTNAME: localhost
           POSTGRES_DATABASE: test_database
           POSTGRES_USERNAME: postgres
           POSTGRES_PASSWORD: test_password
-        run: pytest --numprocesses auto
-      - name: run tests with coverage
-        if: matrix.python-version == '3.x' && matrix.os == 'ubuntu-latest'
-        env:
-          POSTGRES_HOSTNAME: localhost
-          POSTGRES_DATABASE: test_database
-          POSTGRES_USERNAME: postgres
-          POSTGRES_PASSWORD: test_password
-        run: pytest --numprocesses auto --cov . --cov-report xml:coverage.xml
-      - name: upload coverage to Codecov
-        if: matrix.python-version == '3.x' && matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v2.1.0
+      - if: ${{ contains(matrix.toxenv,'-cov') }}
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
+          file: ./coverage.xml
+          flags: unit
           fail_ci_if_error: true
+  build:
+    name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    needs: [ test ]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        toxenv: [ build-twine ]
+        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
+        os: [ ubuntu-latest, macos-latest ]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'pyproject.toml'
+      - run: pip install tox
+      - run: tox -e ${{ matrix.toxenv }}
