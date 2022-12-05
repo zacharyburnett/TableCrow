@@ -60,7 +60,7 @@ jobs:
       - run: tox -e ${{ matrix.toxenv }}
   test_postgres:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ test_sqlite ]
+    needs: [ check ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -90,7 +90,7 @@ jobs:
       - run: tox -e ${{ matrix.toxenv }}
   test_spatial:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ test_sqlite ]
+    needs: [ check ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -123,7 +123,7 @@ jobs:
       - run: tox -e ${{ matrix.toxenv }}
   test_with_coverage:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ test_postgres, test_spatial ]
+    needs: [ test_sqlite, test_postgres, test_spatial ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -168,7 +168,7 @@ jobs:
           fail_ci_if_error: true
   build:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ test_sqlite ]
+    needs: [ check ]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
