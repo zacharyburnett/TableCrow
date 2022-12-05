@@ -117,7 +117,7 @@ jobs:
       - run: tox -e ${{ matrix.toxenv }}
   test_with_coverage:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ test_spatial ]
+    needs: [ test_postgres, test_spatial ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
