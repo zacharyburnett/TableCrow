@@ -1,15 +1,10 @@
 from datetime import date, datetime
 import os
 import sqlite3
-import warnings
 
 import pytest
-
-try:
-    from shapely.geometry import box, MultiPolygon, Point
-    from pyproj import CRS
-except ImportError:
-    warnings.warn('could not import spatial dependencies')
+from shapely.geometry import box, MultiPolygon, Point
+from pyproj import CRS
 
 from tablecrow import SQLiteTable
 from tablecrow.tables.base import DEFAULT_CRS
