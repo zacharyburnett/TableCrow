@@ -41,9 +41,33 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toxenv: [ test-sqlite-xdist, test-sqlite-spatial-xdist ]
+        toxenv: [ test-sqlite-xdist, test-postgres-xdist ]
         python-version: [ '3.8', '3.9', '3.10', '3.11' ]
         os: [ ubuntu-latest, macos-latest ]
+        exclude:
+          - os: 'macos-latest'
+            toxenv: 'test-postgres-xdist'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'pyproject.toml'
+      - run: pip install tox
+      - run: tox -e ${{ matrix.toxenv }}
+  test_spatial:
+    name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    needs: [ test ]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        toxenv: [ test-sqlite-spatial-xdist, test-postgres-spatial-xdist ]
+        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
+        os: [ ubuntu-latest ]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -57,7 +81,7 @@ jobs:
       - run: tox -e ${{ matrix.toxenv }}
   test_with_coverage:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ test ]
+    needs: [ test_spatial ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
