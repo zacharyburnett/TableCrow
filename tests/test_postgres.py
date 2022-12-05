@@ -97,6 +97,7 @@ def connection() -> psycopg2.connect:
     return connection
 
 
+@pytest.mark.postgres
 def test_table_creation(connection):
     table_name = "test_table_creation"
 
@@ -138,6 +139,7 @@ def test_table_creation(connection):
     assert not table_exists
 
 
+@pytest.mark.postgres
 def test_compound_primary_key(connection):
     table_name = "test_compound_primary_key"
 
@@ -219,6 +221,7 @@ def test_compound_primary_key(connection):
     assert sorted(test_raw_remote_fields) == sorted(fields)
 
 
+@pytest.mark.postgres
 def test_record_insertion(connection):
     table_name = "test_record_insertion"
 
@@ -288,6 +291,7 @@ def test_record_insertion(connection):
     assert test_records_after_deletion == records
 
 
+@pytest.mark.postgres
 def test_table_flexibility(connection):
     table_name = "test_table_flexibility"
 
@@ -360,6 +364,7 @@ def test_table_flexibility(connection):
                 assert value == record[field]
 
 
+@pytest.mark.postgres
 def test_list_type(connection):
     table_name = "test_list_type"
 
@@ -403,6 +408,7 @@ def test_list_type(connection):
     assert test_record_query_2 == records[:2]
 
 
+@pytest.mark.postgres
 def test_records_where(connection):
     table_name = "test_records_where"
 
@@ -465,6 +471,7 @@ def test_records_where(connection):
     assert test_records_after_deletion == records[1:]
 
 
+@pytest.mark.postgres
 def test_field_reorder(connection):
     table_name = "test_field_reorder"
 
@@ -534,6 +541,7 @@ def test_field_reorder(connection):
                 assert test_record[field] == value
 
 
+@pytest.mark.postgres
 def test_nonexistent_field_in_inserted_record(connection):
     table_name = "test_nonexistent_field_in_inserted_record"
 
@@ -575,6 +583,8 @@ def test_nonexistent_field_in_inserted_record(connection):
     assert test_records == [record_with_extra_field]
 
 
+@pytest.mark.postgres
+@pytest.mark.spatial
 def test_missing_crs(connection):
     table_name = "test_missing_crs"
 
@@ -596,6 +606,8 @@ def test_missing_crs(connection):
     assert table.crs == DEFAULT_CRS
 
 
+@pytest.mark.postgres
+@pytest.mark.spatial
 def test_records_intersecting_polygon(connection):
     table_name = "test_records_intersecting_polygon"
 

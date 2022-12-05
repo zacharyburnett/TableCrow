@@ -41,18 +41,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toxenv: [ test-xdist, test-spatial-xdist ]
+        toxenv: [ test-sqlite-xdist, test-sqlite-spatial-xdist ]
         python-version: [ '3.8', '3.9', '3.10', '3.11' ]
         os: [ ubuntu-latest, macos-latest ]
-    services:
-      postgres:
-        image: postgis/postgis:13-3.1
-        env:
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: test_database
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v3
         with:
@@ -71,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toxenv: [ test-cov ]
+        toxenv: [ test-sqlite-postgres-spatial-xdist-cov ]
         python-version: [ '3.x' ]
         os: [ ubuntu-latest ]
     services:

@@ -30,6 +30,7 @@ def sqlite_connection() -> sqlite3.Connection:
     return sqlite3.connect(CREDENTIALS["sqlite"]["path"])
 
 
+@pytest.mark.sqlite
 def test_table_creation():
     table_name = "test_table_creation"
 
@@ -72,6 +73,7 @@ def test_table_creation():
     assert not table_exists
 
 
+@pytest.mark.sqlite
 def test_compound_primary_key():
     table_name = "test_compound_primary_key"
 
@@ -153,6 +155,7 @@ def test_compound_primary_key():
     assert list(test_raw_remote_fields) == list(fields)
 
 
+@pytest.mark.sqlite
 def test_record_insertion():
     table_name = "test_record_insertion"
 
@@ -234,6 +237,7 @@ def test_record_insertion():
     assert test_records_after_deletion == records
 
 
+@pytest.mark.sqlite
 def test_table_flexibility():
     table_name = "test_table_flexibility"
 
@@ -307,6 +311,7 @@ def test_table_flexibility():
                 assert value == record[field]
 
 
+@pytest.mark.sqlite
 def test_records_where():
     table_name = "test_records_where"
 
@@ -369,6 +374,7 @@ def test_records_where():
     assert test_records_after_deletion == records[1:]
 
 
+@pytest.mark.sqlite
 def test_field_reorder():
     table_name = "test_field_reorder"
 
@@ -438,6 +444,7 @@ def test_field_reorder():
                 assert test_record[field] == value
 
 
+@pytest.mark.sqlite
 def test_nonexistent_field_in_inserted_record():
     table_name = "test_nonexistent_field_in_inserted_record"
 
@@ -480,6 +487,8 @@ def test_nonexistent_field_in_inserted_record():
     assert test_records == [record_with_extra_field]
 
 
+@pytest.mark.sqlite
+@pytest.mark.spatial
 def test_missing_crs():
     table_name = "test_missing_crs"
 
@@ -501,6 +510,8 @@ def test_missing_crs():
     assert table.crs == DEFAULT_CRS
 
 
+@pytest.mark.sqlite
+@pytest.mark.spatial
 def test_records_intersecting_polygon():
     table_name = "test_records_intersecting_polygon"
 

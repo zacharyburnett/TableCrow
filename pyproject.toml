@@ -6,24 +6,26 @@ readme = 'README.md'
 requires-python = '>=3.8'
 license = { file = 'LICENSE' }
 dependencies = [
-    'psycopg2-binary',
-    'pyproj',
     'python-dateutil',
-    'shapely',
-    'spatialite',
     'sshtunnel',
     'typepigeon >=1.0.2'
 ]
 dynamic = ['version']
 
 [project.optional-dependencies]
+postgres = [
+    'psycopg2-binary',
+]
+spatial = [
+    'pyproj',
+    'spatialite',
+    'shapely',
+]
 test = [
     'pytest',
-    'pytest-cov',
-    'pytest-xdist',
 ]
 docs = [
-    'dunama',
+    'dunamai',
     'm2r2',
     'sphinx',
     'sphinx-rtd-theme',
