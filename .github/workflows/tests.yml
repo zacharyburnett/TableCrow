@@ -47,7 +47,7 @@ jobs:
     steps:
       - run: |
           sudo apt install libsqlite3-mod-spatialite 
-          ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -109,8 +109,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - run: |
-          sudo apt install libsqlite3-mod-spatialite 
-          ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
+          sudo apt install libsqlite3-mod-spatialite
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -143,7 +143,7 @@ jobs:
     steps:
       - run: |
           sudo apt install libsqlite3-mod-spatialite 
-          ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
