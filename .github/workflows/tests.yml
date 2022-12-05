@@ -34,19 +34,46 @@ jobs:
           cache-dependency-path: 'pyproject.toml'
       - run: pip install tox
       - run: tox -e ${{ matrix.toxenv }}
-  test:
+  test_sqlite:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     needs: [ check ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        toxenv: [ test-sqlite-xdist, test-postgres-xdist ]
+        toxenv: [ test-sqlite-xdist ]
         python-version: [ '3.8', '3.9', '3.10', '3.11' ]
         os: [ ubuntu-latest, macos-latest ]
-        exclude:
-          - os: 'macos-latest'
-            toxenv: 'test-postgres-xdist'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'pyproject.toml'
+      - run: pip install tox
+      - run: tox -e ${{ matrix.toxenv }}
+  test_postgres:
+    name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    needs: [ test_sqlite ]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        toxenv: [ test-postgres-xdist ]
+        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
+        os: [ ubuntu-latest ]
+    services:
+      postgres:
+        image: postgis/postgis:13-3.1
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_database
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v3
         with:
@@ -60,14 +87,23 @@ jobs:
       - run: tox -e ${{ matrix.toxenv }}
   test_spatial:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ test ]
+    needs: [ test_sqlite ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        toxenv: [ test-sqlite-spatial-xdist, test-postgres-spatial-xdist ]
+        toxenv: [ test-spatial-xdist ]
         python-version: [ '3.8', '3.9', '3.10', '3.11' ]
         os: [ ubuntu-latest ]
+    services:
+      postgres:
+        image: postgis/postgis:13-3.1
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_database
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v3
         with:
@@ -126,7 +162,7 @@ jobs:
           fail_ci_if_error: true
   build:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ test ]
+    needs: [ test_sqlite ]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
