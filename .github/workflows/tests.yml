@@ -43,8 +43,11 @@ jobs:
       matrix:
         toxenv: [ test-sqlite-xdist ]
         python-version: [ '3.8', '3.9', '3.10', '3.11' ]
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ ubuntu-latest ]
     steps:
+      - run: |
+          sudo apt install libsqlite3-mod-spatialite 
+          ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
