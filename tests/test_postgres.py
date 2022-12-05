@@ -1,12 +1,21 @@
 from datetime import date, datetime
 from functools import partial
 import os
+import warnings
 
-import psycopg2
-from pyproj import CRS
 import pytest
-from shapely.geometry import box, MultiPolygon, Point
-from sshtunnel import SSHTunnelForwarder
+
+try:
+    import psycopg2
+    from sshtunnel import SSHTunnelForwarder
+except ImportError:
+    warnings.warn('could not import postgres dependencies')
+
+try:
+    from shapely.geometry import box, MultiPolygon, Point
+    from pyproj import CRS
+except ImportError:
+    warnings.warn('could not import spatial dependencies')
 
 from tablecrow import PostGresTable
 from tablecrow.tables.base import DEFAULT_CRS, random_open_tcp_port
