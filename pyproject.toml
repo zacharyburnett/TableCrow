@@ -41,5 +41,18 @@ build-backend = 'setuptools.build_meta'
 
 [tool.setuptools_scm]
 
+[tool.pytest.ini_options]
+markers = [
+    "spatial",
+    "postgres",
+    "sqlite",
+]
+norecursedirs = [
+    'build',
+    '.eggs',
+    'venv',
+    '.tox',
+]
+
 [tool.ruff]
 ignore = ["E501", "E722"]
