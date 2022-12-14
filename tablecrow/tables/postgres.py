@@ -14,7 +14,11 @@ from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry, GEOMETRY_
 from sshtunnel import SSHTunnelForwarder
 from typepigeon import guard_generic_alias
 
-from tablecrow.tables.base import DatabaseTable, parse_record_values, random_open_tcp_port
+from tablecrow.tables.base import (
+    DatabaseTable,
+    parse_record_values,
+    random_open_tcp_port,
+)
 
 from ..utilities import parse_hostname, split_hostname_port
 
@@ -24,19 +28,19 @@ SSH_DEFAULT_PORT = 22
 class PostGresTable(DatabaseTable):
     DEFAULT_PORT = 5432
     FIELD_TYPES = {
-        'NoneType': 'NULL',
-        'bool': 'BOOL',
-        'float': 'REAL',
-        'int': 'INTEGER',
-        'str': 'VARCHAR',
-        'bytes': 'BYTEA',
-        'date': 'DATE',
-        'time': 'TIME',
-        'datetime': 'TIMESTAMP',
-        'timedelta': 'INTERVAL',
-        'dict': 'HSTORE',
-        'ipaddress': 'INET',
-        **{geometry_type: 'GEOMETRY' for geometry_type in GEOMETRY_TYPES},
+        "NoneType": "NULL",
+        "bool": "BOOL",
+        "float": "REAL",
+        "int": "INTEGER",
+        "str": "VARCHAR",
+        "bytes": "BYTEA",
+        "date": "DATE",
+        "time": "TIME",
+        "datetime": "TIMESTAMP",
+        "timedelta": "INTERVAL",
+        "dict": "HSTORE",
+        "ipaddress": "INET",
+        **{geometry_type: "GEOMETRY" for geometry_type in GEOMETRY_TYPES},
     }
 
     def __init__(
@@ -54,32 +58,32 @@ class PostGresTable(DatabaseTable):
     ):
         self.tunnel_credentials = {}
 
-        if 'ssh_hostname' in kwargs and kwargs['ssh_hostname'] is not None:
-            credentials = parse_hostname(kwargs['ssh_hostname'])
-            ssh_hostname = credentials['hostname']
-            ssh_port = credentials['port']
+        if "ssh_hostname" in kwargs and kwargs["ssh_hostname"] is not None:
+            credentials = parse_hostname(kwargs["ssh_hostname"])
+            ssh_hostname = credentials["hostname"]
+            ssh_port = credentials["port"]
             if ssh_port is None:
                 ssh_port = SSH_DEFAULT_PORT
 
-            ssh_username = kwargs['ssh_username'] if 'ssh_username' in kwargs else None
-            ssh_password = kwargs['ssh_password'] if 'ssh_password' in kwargs else None
+            ssh_username = kwargs["ssh_username"] if "ssh_username" in kwargs else None
+            ssh_password = kwargs["ssh_password"] if "ssh_password" in kwargs else None
 
-            self.tunnel_credentials['ssh_hostname'] = ssh_hostname
-            self.tunnel_credentials['ssh_port'] = ssh_port
-            self.tunnel_credentials['ssh_username'] = ssh_username
-            self.tunnel_credentials['ssh_password'] = ssh_password
+            self.tunnel_credentials["ssh_hostname"] = ssh_hostname
+            self.tunnel_credentials["ssh_port"] = ssh_port
+            self.tunnel_credentials["ssh_username"] = ssh_username
+            self.tunnel_credentials["ssh_password"] = ssh_password
 
         password = None
-        if username is not None and ':' in username:
-            username, password = username.split(':', 1)
-        if 'password' in kwargs:
-            password = kwargs['password']
+        if username is not None and ":" in username:
+            username, password = username.split(":", 1)
+        if "password" in kwargs:
+            password = kwargs["password"]
         if password is None:
             password = getpass()
         self._DatabaseTable__password = password
 
         if database is None:
-            database = 'postgres'
+            database = "postgres"
 
         super().__init__(
             resource=hostname,
@@ -96,13 +100,15 @@ class PostGresTable(DatabaseTable):
 
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+                f"no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}"
             )
 
         if self.fields is None:
             with self.connection as connection:
                 with connection.cursor() as cursor:
-                    self._DatabaseTable__fields = database_table_fields(cursor, self.name)
+                    self._DatabaseTable__fields = database_table_fields(
+                        cursor, self.name
+                    )
             connection.close()
 
             if self.primary_key is None:
@@ -129,10 +135,10 @@ class PostGresTable(DatabaseTable):
                         }
                         if len(remote_fields_not_in_local_table) > 0:
                             self.logger.warning(
-                                f'remote table has {len(remote_fields_not_in_local_table)} fields not in local table: {list(remote_fields_not_in_local_table)}'
+                                f"remote table has {len(remote_fields_not_in_local_table)} fields not in local table: {list(remote_fields_not_in_local_table)}"
                             )
                             self.logger.warning(
-                                f'adding {len(remote_fields_not_in_local_table)} fields to local table: {list(remote_fields_not_in_local_table)}'
+                                f"adding {len(remote_fields_not_in_local_table)} fields to local table: {list(remote_fields_not_in_local_table)}"
                             )
 
                             self._DatabaseTable__fields.update(
@@ -150,10 +156,10 @@ class PostGresTable(DatabaseTable):
                         }
                         if len(local_fields_not_in_remote_table) > 0:
                             self.logger.warning(
-                                f'local table has {len(local_fields_not_in_remote_table)} fields not in remote table: {list(local_fields_not_in_remote_table)}'
+                                f"local table has {len(local_fields_not_in_remote_table)} fields not in remote table: {list(local_fields_not_in_remote_table)}"
                             )
                             self.logger.warning(
-                                f'adding {len(local_fields_not_in_remote_table)} fields to remote table: {list(local_fields_not_in_remote_table)}'
+                                f"adding {len(local_fields_not_in_remote_table)} fields to remote table: {list(local_fields_not_in_remote_table)}"
                             )
 
                         if list(remote_fields) != list(self.fields):
@@ -163,19 +169,19 @@ class PostGresTable(DatabaseTable):
                             self.logger.debug(self.remote_fields)
                             self.logger.debug(self.fields)
 
-                            copy_table_name = f'old_{self.name}'
+                            copy_table_name = f"old_{self.name}"
 
                             if database_has_table(cursor, copy_table_name):
-                                cursor.execute(f'DROP TABLE {copy_table_name};')
+                                cursor.execute(f"DROP TABLE {copy_table_name};")
 
                             cursor.execute(
-                                f'ALTER TABLE {self.name} RENAME TO {copy_table_name};'
+                                f"ALTER TABLE {self.name} RENAME TO {copy_table_name};"
                             )
 
-                            cursor.execute(f'CREATE TABLE {self.name} ({self.schema});')
+                            cursor.execute(f"CREATE TABLE {self.name} ({self.schema});")
                             for user in self.users:
                                 cursor.execute(
-                                    f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};'
+                                    f"GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};"
                                 )
 
                             copy_table_fields = list(
@@ -186,18 +192,20 @@ class PostGresTable(DatabaseTable):
                                 f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) SELECT {", ".join(copy_table_fields)} FROM {copy_table_name};'
                             )
 
-                            cursor.execute(f'DROP TABLE {copy_table_name};')
+                            cursor.execute(f"DROP TABLE {copy_table_name};")
                 else:
-                    self.logger.debug(f'creating remote table "{self.database}/{self.name}"')
-                    cursor.execute(f'CREATE TABLE {self.name} ({self.schema});')
+                    self.logger.debug(
+                        f'creating remote table "{self.database}/{self.name}"'
+                    )
+                    cursor.execute(f"CREATE TABLE {self.name} ({self.schema});")
 
                     for user in self.users:
                         cursor.execute(
-                            f'GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};'
+                            f"GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE public.{self.name} TO {user};"
                         )
         connection.close()
-        if 'password' in kwargs:
-            kwargs['password'] = '*****'
+        if "password" in kwargs:
+            kwargs["password"] = "*****"
         self.kwargs = kwargs
 
     @property
@@ -206,16 +214,19 @@ class PostGresTable(DatabaseTable):
 
     @property
     def tunnel(self) -> SSHTunnelForwarder:
-        if 'ssh_hostname' in self.tunnel_credentials:
+        if "ssh_hostname" in self.tunnel_credentials:
             port = split_hostname_port(self.resource)[-1]
             if port is None:
                 port = self.DEFAULT_PORT
             tunnel = SSHTunnelForwarder(
-                (self.tunnel_credentials['ssh_hostname'], self.tunnel_credentials['ssh_port']),
-                ssh_username=self.tunnel_credentials['ssh_username'],
-                ssh_password=self.tunnel_credentials['ssh_password'],
-                remote_bind_address=('localhost', port),
-                local_bind_address=('localhost', random_open_tcp_port()),
+                (
+                    self.tunnel_credentials["ssh_hostname"],
+                    self.tunnel_credentials["ssh_port"],
+                ),
+                ssh_username=self.tunnel_credentials["ssh_username"],
+                ssh_password=self.tunnel_credentials["ssh_password"],
+                remote_bind_address=("localhost", port),
+                local_bind_address=("localhost", random_open_tcp_port()),
             )
             try:
                 tunnel.start()
@@ -236,7 +247,9 @@ class PostGresTable(DatabaseTable):
 
         tunnel = self.tunnel
         if tunnel is not None:
-            connection = connector(host=tunnel.local_bind_host, port=tunnel.local_bind_port)
+            connection = connector(
+                host=tunnel.local_bind_host, port=tunnel.local_bind_port
+            )
         else:
             connection = connector(host=self.hostname, port=self.port)
 
@@ -252,7 +265,7 @@ class PostGresTable(DatabaseTable):
 
     @property
     def schema(self) -> str:
-        """ PostGres schema string """
+        """PostGres schema string"""
 
         schema = []
         for field, field_type in self.fields.items():
@@ -279,13 +292,13 @@ class PostGresTable(DatabaseTable):
 
         schema.append(f'PRIMARY KEY({", ".join(self.primary_key)})')
 
-        return ', '.join(schema)
+        return ", ".join(schema)
 
     @property
     def remote_fields(self) -> Dict[str, type]:
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+                f"no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}"
             )
 
         fields = None
@@ -295,20 +308,22 @@ class PostGresTable(DatabaseTable):
                     fields = database_table_fields(cursor, self.name)
 
                     for field, field_type in fields.items():
-                        dimensions = field_type.count('_')
-                        field_type = field_type.strip('_')
+                        dimensions = field_type.count("_")
+                        field_type = field_type.strip("_")
 
                         field_type = field_type.lower()
-                        if field_type == 'geometry':
+                        if field_type == "geometry":
                             if field in self.fields:
                                 fields[field] = self.fields[field]
                                 continue
 
                         for python_type, postgres_type in self.FIELD_TYPES.items():
                             if postgres_type.lower() == field_type:
-                                if field_type == 'geometry':
+                                if field_type == "geometry":
                                     if python_type not in globals():
-                                        exec(f'from shapely.geometry import {python_type}')
+                                        exec(
+                                            f"from shapely.geometry import {python_type}"
+                                        )
                                 field_type = eval(python_type)
                                 break
                         else:
@@ -333,7 +348,7 @@ class PostGresTable(DatabaseTable):
         with self.connection as connection:
             try:
                 with connection.cursor() as cursor:
-                    cursor.execute('SELECT 1;')
+                    cursor.execute("SELECT 1;")
                     cursor.fetchone()
                 connected = True
             except:
@@ -346,7 +361,7 @@ class PostGresTable(DatabaseTable):
     ) -> List[Dict[str, Any]]:
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+                f"no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}"
             )
 
         where_clause, where_values = self.__where_clause(where)
@@ -354,16 +369,19 @@ class PostGresTable(DatabaseTable):
         with self.connection as connection:
             with connection.cursor() as cursor:
                 if where_clause is None:
-                    cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.name};')
+                    cursor.execute(
+                        f'SELECT {", ".join(self.fields.keys())} FROM {self.name};'
+                    )
                 else:
                     try:
                         cursor.execute(
-                            f'SELECT * FROM {self.name} WHERE {where_clause};', where_values
+                            f"SELECT * FROM {self.name} WHERE {where_clause};",
+                            where_values,
                         )
                     except psycopg2.errors.UndefinedColumn as error:
                         raise KeyError(error)
                     except psycopg2.errors.SyntaxError as error:
-                        raise SyntaxError(f'invalid SQL syntax - {error}')
+                        raise SyntaxError(f"invalid SQL syntax - {error}")
                 matching_records = cursor.fetchall()
         connection.close()
 
@@ -390,17 +408,17 @@ class PostGresTable(DatabaseTable):
         where_values = []
         for field in geometry_fields:
             where_values.extend([geometry.wkt, crs.to_epsg()])
-            geometry_string = f'ST_GeomFromText(%s, %s)'
+            geometry_string = "ST_GeomFromText(%s, %s)"
             if crs != self.crs:
-                geometry_string = f'ST_Transform({geometry_string}, %s)'
+                geometry_string = f"ST_Transform({geometry_string}, %s)"
                 where_values.append(self.crs.to_epsg())
-            where_clause.append(f'ST_Intersects({field}, {geometry_string})')
-        where_clause = ' OR '.join(where_clause)
+            where_clause.append(f"ST_Intersects({field}, {geometry_string})")
+        where_clause = " OR ".join(where_clause)
 
         with self.connection as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    f'SELECT * FROM {self.name} WHERE {where_clause};', where_values
+                    f"SELECT * FROM {self.name} WHERE {where_clause};", where_values
                 )
                 records = cursor.fetchall()
         connection.close()
@@ -421,7 +439,7 @@ class PostGresTable(DatabaseTable):
 
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+                f"no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}"
             )
 
         with self.connection as connection:
@@ -441,8 +459,8 @@ class PostGresTable(DatabaseTable):
                     ]
                     if len(record_fields_not_in_local_table) > 0:
                         self.logger.warning(
-                            f'record has {len(record_fields_not_in_local_table)} fields not in the local table'
-                            f' that will not be inserted: {record_fields_not_in_local_table}'
+                            f"record has {len(record_fields_not_in_local_table)} fields not in the local table"
+                            f" that will not be inserted: {record_fields_not_in_local_table}"
                         )
 
                     local_fields_in_record = [
@@ -479,7 +497,7 @@ class PostGresTable(DatabaseTable):
                             if len(record_without_primary_key) > 1:
                                 cursor.execute(
                                     f'UPDATE {self.name} SET ({", ".join(record_without_primary_key.keys())}) = %s '
-                                    f'WHERE {primary_key_string} = %s;',
+                                    f"WHERE {primary_key_string} = %s;",
                                     [
                                         tuple(record_without_primary_key.values()),
                                         primary_key_value,
@@ -487,8 +505,8 @@ class PostGresTable(DatabaseTable):
                                 )
                             else:
                                 cursor.execute(
-                                    f'UPDATE {self.name} SET {tuple(record_without_primary_key.keys())[0]} = %s '
-                                    f'WHERE {primary_key_string} = %s;',
+                                    f"UPDATE {self.name} SET {tuple(record_without_primary_key.keys())[0]} = %s "
+                                    f"WHERE {primary_key_string} = %s;",
                                     [
                                         tuple(record_without_primary_key.values())[0],
                                         primary_key_value,
@@ -509,8 +527,8 @@ class PostGresTable(DatabaseTable):
 
                         for field, geometry in geometries.items():
                             cursor.execute(
-                                f'UPDATE {self.name} SET {field} = ST_GeomFromText(%s, %s) '
-                                f'WHERE {primary_key_string} = %s;',
+                                f"UPDATE {self.name} SET {field} = ST_GeomFromText(%s, %s) "
+                                f"WHERE {primary_key_string} = %s;",
                                 [geometry.wkt, self.crs.to_epsg(), primary_key_value],
                             )
         connection.close()
@@ -518,7 +536,7 @@ class PostGresTable(DatabaseTable):
     def delete_where(self, where: Union[Mapping[str, Any], str, List[str]]):
         if not self.connected:
             raise ConnectionError(
-                f'no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}'
+                f"no connection to {self.username}@{self.hostname}:{self.port}/{self.database}/{self.name}"
             )
 
         where_clause, where_values = self.__where_clause(where)
@@ -526,22 +544,23 @@ class PostGresTable(DatabaseTable):
         with self.connection as connection:
             with connection.cursor() as cursor:
                 if where_clause is None:
-                    cursor.execute(f'TRUNCATE {self.name};')
+                    cursor.execute(f"TRUNCATE {self.name};")
                 else:
                     try:
                         cursor.execute(
-                            f'DELETE FROM {self.name} WHERE {where_clause};', where_values
+                            f"DELETE FROM {self.name} WHERE {where_clause};",
+                            where_values,
                         )
                     except psycopg2.errors.UndefinedColumn as error:
                         raise KeyError(error)
                     except psycopg2.errors.SyntaxError as error:
-                        raise SyntaxError(f'invalid SQL syntax - {error}')
+                        raise SyntaxError(f"invalid SQL syntax - {error}")
         connection.close()
 
     def __len__(self) -> int:
         with self.connection as connection:
             with connection.cursor() as cursor:
-                cursor.execute(f'SELECT COUNT(*) FROM {self.name};')
+                cursor.execute(f"SELECT COUNT(*) FROM {self.name};")
                 length = cursor.fetchone()[0]
         connection.close()
         return length
@@ -549,14 +568,14 @@ class PostGresTable(DatabaseTable):
     def delete_table(self):
         with self.connection as connection:
             with connection.cursor() as cursor:
-                cursor.execute(f'DROP TABLE {self.name};')
+                cursor.execute(f"DROP TABLE {self.name};")
         connection.close()
 
     def __repr__(self) -> str:
         return (
-            f'{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, {repr(self.fields)}, {repr(self.primary_key)}, '
-            f'{repr(self.hostname)}, {repr(self.crs.to_epsg()) if self.crs is not None else None}, '
-            f'{repr(self.username)}, {repr(self.users)}'
+            f"{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, {repr(self.fields)}, {repr(self.primary_key)}, "
+            f"{repr(self.hostname)}, {repr(self.crs.to_epsg()) if self.crs is not None else None}, "
+            f"{repr(self.username)}, {repr(self.users)}"
             f'{", " if len(self.kwargs) > 0 else ""}'
             f'{", ".join(key + "=" + repr(value) for key, value in self.kwargs.items())})'
         )
@@ -584,40 +603,46 @@ class PostGresTable(DatabaseTable):
                     if isinstance(value, BaseGeometry) or isinstance(
                         value, BaseMultipartGeometry
                     ):
-                        where_clause.append(f'{field} = ST_GeomFromText(%s, %s)')
+                        where_clause.append(f"{field} = ST_GeomFromText(%s, %s)")
                         where_values.extend([value.wkt, self.crs.to_epsg()])
                     else:
                         if isinstance(field_type, list):
-                            if not isinstance(value, Sequence) or isinstance(value, str):
-                                statement = f'%s = ANY({field})'
+                            if not isinstance(value, Sequence) or isinstance(
+                                value, str
+                            ):
+                                statement = f"%s = ANY({field})"
                             else:
                                 if fields is None:
                                     with self.connection as connection:
                                         with connection.cursor() as cursor:
-                                            fields = database_table_fields(cursor, self.name)
+                                            fields = database_table_fields(
+                                                cursor, self.name
+                                            )
                                     connection.close()
                                 field_type = fields[field]
-                                dimensions = field_type.count('_')
-                                field_type = field_type.strip('_')
-                                statement = f'{field} = %s::{field_type}{"[]" * dimensions}'
+                                dimensions = field_type.count("_")
+                                field_type = field_type.strip("_")
+                                statement = (
+                                    f'{field} = %s::{field_type}{"[]" * dimensions}'
+                                )
                         elif value is None:
-                            statement = f'{field} IS %s'
+                            statement = f"{field} IS %s"
                         elif isinstance(value, Sequence) and not isinstance(value, str):
-                            statement = f'{field} IN %s'
+                            statement = f"{field} IN %s"
                             value = tuple(value)
-                        elif isinstance(value, str) and '%' in value:
-                            statement = f'{field} ILIKE %s'
+                        elif isinstance(value, str) and "%" in value:
+                            statement = f"{field} ILIKE %s"
                         else:
                             if isinstance(value, datetime):
-                                value = f'{value:%Y%m%d %H%M%S}'
+                                value = f"{value:%Y%m%d %H%M%S}"
                             elif isinstance(value, date):
-                                value = f'{value:%Y%m%d}'
-                            statement = f'{field} = %s'
+                                value = f"{value:%Y%m%d}"
+                            statement = f"{field} = %s"
                         where_values.append(value)
                         where_clause.append(statement)
-                where_clause = ' AND '.join(where_clause)
+                where_clause = " AND ".join(where_clause)
             else:
-                where_clause = ' AND '.join(where)
+                where_clause = " AND ".join(where)
 
             if len(where_values) == 0:
                 where_values = None
@@ -634,10 +659,10 @@ def database_tables(cursor: Cursor, user_defined: bool = True) -> List[str]:
     """
 
     # query = "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
-    query = f"SELECT relname FROM pg_class WHERE relkind='r'"
+    query = "SELECT relname FROM pg_class WHERE relkind='r'"
     if user_defined:
         query += " AND relname !~ '^(pg_|sql_)'"
-    query += ';'
+    query += ";"
 
     cursor.execute(query)
     return [record[0] for record in cursor.fetchall()]
@@ -653,8 +678,8 @@ def database_has_table(cursor: psycopg2._psycopg.cursor, table: str) -> bool:
     """
 
     cursor.execute(
-        # f'SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name=%s);',
-        f'SELECT EXISTS(SELECT 1 FROM pg_class WHERE relname=%s);',
+        # "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name=%s);",
+        "SELECT EXISTS(SELECT 1 FROM pg_class WHERE relname=%s);",
         [table.lower()],
     )
     return cursor.fetchone()[0]
@@ -670,13 +695,15 @@ def database_table_is_inherited(cursor: psycopg2._psycopg.cursor, table: str) ->
     """
 
     cursor.execute(
-        f'SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_inherits WHERE inhrelid=%s::regclass);',
-        [f'public.{table}'],
+        "SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_inherits WHERE inhrelid=%s::regclass);",
+        [f"public.{table}"],
     )
     return cursor.fetchone()[0]
 
 
-def database_table_fields(cursor: psycopg2._psycopg.cursor, table: str) -> Dict[str, str]:
+def database_table_fields(
+    cursor: psycopg2._psycopg.cursor, table: str
+) -> Dict[str, str]:
     """
     field names and data types of the given table, within the given PostGreSQL database
 
@@ -686,7 +713,7 @@ def database_table_fields(cursor: psycopg2._psycopg.cursor, table: str) -> Dict[
     """
 
     cursor.execute(
-        f'SELECT column_name, udt_name FROM information_schema.columns WHERE table_name=%s;',
+        "SELECT column_name, udt_name FROM information_schema.columns WHERE table_name=%s;",
         [table],
     )
     return {record[0]: record[1] for record in cursor.fetchall()}

@@ -15,25 +15,25 @@ from tablecrow.tables.base import DatabaseTable, parse_record_values
 SSH_DEFAULT_PORT = 22
 
 GEOMETRY_TYPES = [
-    'Point',
-    'LineString',
-    'Polygon',
-    'MultiPoint',
-    'MultiLineString',
-    'MultiPolygon',
+    "Point",
+    "LineString",
+    "Polygon",
+    "MultiPoint",
+    "MultiLineString",
+    "MultiPolygon",
 ]
 
 
 class SQLiteTable(DatabaseTable):
     FIELD_TYPES = {
-        'NoneType': 'NULL',
-        'bool': 'BOOLEAN',
-        'float': 'REAL',
-        'int': 'INTEGER',
-        'str': 'TEXT',
-        'date': 'DATE',
-        'datetime': 'DATETIME',
-        'bytes': 'BLOB',
+        "NoneType": "NULL",
+        "bool": "BOOLEAN",
+        "float": "REAL",
+        "int": "INTEGER",
+        "str": "TEXT",
+        "date": "DATE",
+        "datetime": "DATETIME",
+        "bytes": "BLOB",
         **{geometry_type: geometry_type.upper() for geometry_type in GEOMETRY_TYPES},
     }
     DEFAULT_PORT = None
@@ -47,7 +47,7 @@ class SQLiteTable(DatabaseTable):
         crs: CRS = None,
         logger: Logger = None,
     ):
-        if '://' not in str(path):
+        if "://" not in str(path):
             path = str(Path(path).expanduser().resolve())
 
         super().__init__(
@@ -61,7 +61,7 @@ class SQLiteTable(DatabaseTable):
         )
 
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.path}/{self.name}')
+            raise ConnectionError(f"no connection to {self.path}/{self.name}")
 
         if self.fields is None:
             with self.connection:
@@ -80,15 +80,15 @@ class SQLiteTable(DatabaseTable):
                 import platform
 
                 system_platform = platform.system()
-                if system_platform == 'Windows':
-                    message = 'download the module from `http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/spatialite-loadable-modules-5.0.0-win-amd64.7z` and place `mod_spatialite.dll` / `mod_spatialite.so` in your `PATH`'
-                elif system_platform in ['Linux', 'Darwin']:
+                if system_platform == "Windows":
+                    message = "download the module from `http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/spatialite-loadable-modules-5.0.0-win-amd64.7z` and place `mod_spatialite.dll` / `mod_spatialite.so` in your `PATH`"
+                elif system_platform in ["Linux", "Darwin"]:
                     message = (
-                        'run the following: \n'
-                        'sudo apt install libsqlite3-mod-spatialite \n'
-                        'ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite'
+                        "run the following: \n"
+                        "sudo apt install libsqlite3-mod-spatialite \n"
+                        "ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite"
                     )
-                raise EnvironmentError(f'SpatiaLite module was not found; {message}')
+                raise EnvironmentError(f"SpatiaLite module was not found; {message}")
 
         with self.connection:
             cursor = self.connection.cursor()
@@ -106,13 +106,15 @@ class SQLiteTable(DatabaseTable):
                     }
                     if len(remote_fields_not_in_local_table) > 0:
                         self.logger.warning(
-                            f'remote table has {len(remote_fields_not_in_local_table)} fields not in local table: {list(remote_fields_not_in_local_table)}'
+                            f"remote table has {len(remote_fields_not_in_local_table)} fields not in local table: {list(remote_fields_not_in_local_table)}"
                         )
                         self.logger.warning(
-                            f'adding {len(remote_fields_not_in_local_table)} fields to local table: {list(remote_fields_not_in_local_table)}'
+                            f"adding {len(remote_fields_not_in_local_table)} fields to local table: {list(remote_fields_not_in_local_table)}"
                         )
 
-                        self._DatabaseTable__fields.update(remote_fields_not_in_local_table)
+                        self._DatabaseTable__fields.update(
+                            remote_fields_not_in_local_table
+                        )
                         self._DatabaseTable__fields = {
                             field: self._DatabaseTable__fields[field]
                             for field in remote_fields
@@ -125,10 +127,10 @@ class SQLiteTable(DatabaseTable):
                     }
                     if len(local_fields_not_in_remote_table) > 0:
                         self.logger.warning(
-                            f'local table has {len(local_fields_not_in_remote_table)} fields not in remote table: {list(local_fields_not_in_remote_table)}'
+                            f"local table has {len(local_fields_not_in_remote_table)} fields not in remote table: {list(local_fields_not_in_remote_table)}"
                         )
                         self.logger.warning(
-                            f'adding {len(local_fields_not_in_remote_table)} fields to remote table: {list(local_fields_not_in_remote_table)}'
+                            f"adding {len(local_fields_not_in_remote_table)} fields to remote table: {list(local_fields_not_in_remote_table)}"
                         )
 
                     if list(remote_fields) != list(self.fields):
@@ -138,25 +140,29 @@ class SQLiteTable(DatabaseTable):
                         self.logger.debug(self.remote_fields)
                         self.logger.debug(self.fields)
 
-                        copy_table_name = f'old_{self.name}'
+                        copy_table_name = f"old_{self.name}"
 
                         if database_has_table(cursor, copy_table_name):
-                            cursor.execute(f'DROP TABLE {copy_table_name};')
+                            cursor.execute(f"DROP TABLE {copy_table_name};")
 
-                        cursor.execute(f'ALTER TABLE {self.name} RENAME TO {copy_table_name};')
+                        cursor.execute(
+                            f"ALTER TABLE {self.name} RENAME TO {copy_table_name};"
+                        )
 
-                        cursor.execute(f'CREATE TABLE {self.name} ({self.schema});')
-                        cursor.execute(f'PRAGMA table_info({copy_table_name})')
+                        cursor.execute(f"CREATE TABLE {self.name} ({self.schema});")
+                        cursor.execute(f"PRAGMA table_info({copy_table_name})")
                         copy_table_fields = [record[1] for record in cursor.fetchall()]
 
                         cursor.execute(
                             f'INSERT INTO {self.name} ({", ".join(copy_table_fields)}) SELECT * FROM {copy_table_name};'
                         )
 
-                        cursor.execute(f'DROP TABLE {copy_table_name};')
+                        cursor.execute(f"DROP TABLE {copy_table_name};")
             else:
-                self.logger.debug(f'creating remote table "{self.database}/{self.name}"')
-                cursor.execute(f'CREATE TABLE {self.name} ({self.schema});')
+                self.logger.debug(
+                    f'creating remote table "{self.database}/{self.name}"'
+                )
+                cursor.execute(f"CREATE TABLE {self.name} ({self.schema});")
 
     @property
     @lru_cache(maxsize=1)
@@ -181,7 +187,7 @@ class SQLiteTable(DatabaseTable):
 
     @property
     def schema(self) -> str:
-        """ SQLite schema string """
+        """SQLite schema string"""
 
         schema = []
         for field, field_type in self.fields.items():
@@ -190,23 +196,25 @@ class SQLiteTable(DatabaseTable):
                 and not isinstance(field_type, str)
                 or isinstance(field_type, Mapping)
             ):
-                raise sqlite3.OperationalError('SQLite does not support arrays or mappings')
+                raise sqlite3.OperationalError(
+                    "SQLite does not support arrays or mappings"
+                )
 
             try:
                 field_type = self.FIELD_TYPES[field_type.__name__]
             except KeyError:
                 raise TypeError(f'SQLite does not support type "{field_type}"')
 
-            schema.append(f'{field} {field_type}')
+            schema.append(f"{field} {field_type}")
 
         schema.append(f'PRIMARY KEY({", ".join(self.primary_key)})')
 
-        return ', '.join(schema)
+        return ", ".join(schema)
 
     @property
     def remote_fields(self) -> Dict[str, type]:
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.database}/{self.name}')
+            raise ConnectionError(f"no connection to {self.database}/{self.name}")
 
         geometry_fields = [geometry_type.lower() for geometry_type in GEOMETRY_TYPES]
 
@@ -226,7 +234,7 @@ class SQLiteTable(DatabaseTable):
                         if sqlite_type.lower() == field_type:
                             if field_type in geometry_fields:
                                 if python_type not in globals():
-                                    exec(f'from shapely.geometry import {python_type}')
+                                    exec(f"from shapely.geometry import {python_type}")
                             field_type = eval(python_type)
                             break
                     else:
@@ -250,7 +258,7 @@ class SQLiteTable(DatabaseTable):
             with self.connection:
                 try:
                     cursor = self.connection.cursor()
-                    cursor.execute('SELECT 1;')
+                    cursor.execute("SELECT 1;")
                     cursor.fetchone()
                     connected = True
                 except:
@@ -261,22 +269,27 @@ class SQLiteTable(DatabaseTable):
         self, where: Union[Mapping[str, Any], str, List[str]]
     ) -> List[Dict[str, Any]]:
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.database}/{self.name}')
+            raise ConnectionError(f"no connection to {self.database}/{self.name}")
 
         where_clause, where_values = self.__where_clause(where)
 
         with self.connection:
             cursor = self.connection.cursor()
             if where_clause is None:
-                cursor.execute(f'SELECT {", ".join(self.fields.keys())} FROM {self.name}')
+                cursor.execute(
+                    f'SELECT {", ".join(self.fields.keys())} FROM {self.name}'
+                )
             else:
                 try:
                     if where_values is not None:
                         cursor.execute(
-                            f'SELECT * FROM {self.name} WHERE {where_clause}', where_values
+                            f"SELECT * FROM {self.name} WHERE {where_clause}",
+                            where_values,
                         )
                     else:
-                        cursor.execute(f'SELECT * FROM {self.name} WHERE {where_clause}')
+                        cursor.execute(
+                            f"SELECT * FROM {self.name} WHERE {where_clause}"
+                        )
                 except sqlite3.OperationalError:
                     raise
             matching_records = cursor.fetchall()
@@ -304,12 +317,12 @@ class SQLiteTable(DatabaseTable):
         where_values = []
         for field in geometry_fields:
             where_values.extend([geometry.wkt, crs.to_epsg()])
-            geometry_string = f'GeomFromText(?, ?)'
+            geometry_string = "GeomFromText(?, ?)"
             if crs != self.crs:
-                geometry_string = f'Transform({geometry_string}, ?)'
+                geometry_string = f"Transform({geometry_string}, ?)"
                 where_values.append(self.crs.to_epsg())
-            where_clause.append(f'Intersects({field}, {geometry_string})')
-        where_clause = ' OR '.join(where_clause)
+            where_clause.append(f"Intersects({field}, {geometry_string})")
+        where_clause = " OR ".join(where_clause)
 
         non_geometry_fields = {
             field: field_type
@@ -321,7 +334,7 @@ class SQLiteTable(DatabaseTable):
             cursor = self.connection.cursor()
             cursor.execute(
                 f'SELECT {", ".join(non_geometry_fields)} '
-                f'FROM {self.name} WHERE {where_clause};',
+                f"FROM {self.name} WHERE {where_clause};",
                 where_values,
             )
             non_geometry_records = cursor.fetchall()
@@ -332,11 +345,12 @@ class SQLiteTable(DatabaseTable):
                 for record in non_geometry_records
             ]
 
-            geometry_field_string = ', '.join(
-                f'asbinary({geometry_field})' for geometry_field in self.geometry_fields
+            geometry_field_string = ", ".join(
+                f"asbinary({geometry_field})" for geometry_field in self.geometry_fields
             )
             cursor.execute(
-                f'SELECT {geometry_field_string} ' f'FROM {self.name} WHERE {where_clause};',
+                f"SELECT {geometry_field_string} "
+                f"FROM {self.name} WHERE {where_clause};",
                 where_values,
             )
             geometry_records = cursor.fetchall()
@@ -363,7 +377,7 @@ class SQLiteTable(DatabaseTable):
             )
 
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.database}/{self.name}')
+            raise ConnectionError(f"no connection to {self.database}/{self.name}")
 
         with self.connection:
             cursor = self.connection.cursor()
@@ -382,15 +396,21 @@ class SQLiteTable(DatabaseTable):
                 ]
                 if len(record_fields_not_in_local_table) > 0:
                     self.logger.warning(
-                        f'record has {len(record_fields_not_in_local_table)} fields not in the local table'
-                        f' that will not be inserted: {record_fields_not_in_local_table}'
+                        f"record has {len(record_fields_not_in_local_table)} fields not in the local table"
+                        f" that will not be inserted: {record_fields_not_in_local_table}"
                     )
 
-                local_fields_in_record = [field for field in self.fields if field in record]
-                geometry_fields = [field for field in self.geometry_fields if field in record]
+                local_fields_in_record = [
+                    field for field in self.fields if field in record
+                ]
+                geometry_fields = [
+                    field for field in self.geometry_fields if field in record
+                ]
 
                 columns = [
-                    field for field in local_fields_in_record if field not in geometry_fields
+                    field
+                    for field in local_fields_in_record
+                    if field not in geometry_fields
                 ]
                 values = [
                     record[field]
@@ -410,10 +430,13 @@ class SQLiteTable(DatabaseTable):
                         primary_key_value = [primary_key_value]
                     if len(record_without_primary_key) > 0:
                         cursor.execute(
-                            f'UPDATE {self.name} '
+                            f"UPDATE {self.name} "
                             f'SET ({", ".join(record_without_primary_key.keys())}) = ({", ".join("?" for _ in record_without_primary_key)})'
                             f' WHERE {primary_key_string} = ({", ".join("?" for _ in primary_key_value)});',
-                            [*record_without_primary_key.values(), *primary_key_value,],
+                            [
+                                *record_without_primary_key.values(),
+                                *primary_key_value,
+                            ],
                         )
                 else:
                     cursor.execute(
@@ -430,46 +453,46 @@ class SQLiteTable(DatabaseTable):
 
                     for field, geometry in geometries.items():
                         cursor.execute(
-                            f'UPDATE {self.name} SET {field} = GeomFromText(?, ?) '
-                            f'WHERE {primary_key_string} = ?;',
+                            f"UPDATE {self.name} SET {field} = GeomFromText(?, ?) "
+                            f"WHERE {primary_key_string} = ?;",
                             [geometry.wkt, self.crs.to_epsg(), primary_key_value],
                         )
 
     def delete_where(self, where: Union[Mapping[str, Any], str, List[str]]):
         if not self.connected:
-            raise ConnectionError(f'no connection to {self.database}/{self.name}')
+            raise ConnectionError(f"no connection to {self.database}/{self.name}")
 
         where_clause, where_values = self.__where_clause(where)
 
         with self.connection:
             cursor = self.connection.cursor()
             if where_clause is None:
-                cursor.execute(f'TRUNCATE {self.name};')
+                cursor.execute(f"TRUNCATE {self.name};")
             else:
                 try:
                     cursor.execute(
-                        f'DELETE FROM {self.name} WHERE {where_clause};', where_values
+                        f"DELETE FROM {self.name} WHERE {where_clause};", where_values
                     )
                 except sqlite3.OperationalError as error:
-                    raise SyntaxError(f'invalid SQL syntax - {error}')
+                    raise SyntaxError(f"invalid SQL syntax - {error}")
                 except sqlite3.DatabaseError as error:
                     raise KeyError(error)
 
     def __len__(self) -> int:
         with self.connection:
             cursor = self.connection.cursor()
-            cursor.execute(f'SELECT COUNT(*) FROM {self.name};')
+            cursor.execute(f"SELECT COUNT(*) FROM {self.name};")
             return cursor.fetchone()[0]
 
     def delete_table(self):
         with self.connection:
             cursor = self.connection.cursor()
-            cursor.execute(f'DROP TABLE {self.name};')
+            cursor.execute(f"DROP TABLE {self.name};")
 
     def __repr__(self) -> str:
         return (
-            f'{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, '
-            f'{repr(self.fields)}, {repr(self.primary_key)}, {repr(self.crs.to_epsg()) if self.crs is not None else None})'
+            f"{self.__class__.__name__}({repr(self.database)}, {repr(self.name)}, "
+            f"{repr(self.fields)}, {repr(self.primary_key)}, {repr(self.crs.to_epsg()) if self.crs is not None else None})"
         )
 
     def __where_clause(self, where: Dict[str, Union[Any, list]]) -> (str, List[Any]):
@@ -495,40 +518,46 @@ class SQLiteTable(DatabaseTable):
                     if isinstance(value, BaseGeometry) or isinstance(
                         value, BaseMultipartGeometry
                     ):
-                        where_clause.append(f'{field} = GeomFromText(?, ?)')
+                        where_clause.append(f"{field} = GeomFromText(?, ?)")
                         where_values.extend([value.wkt, self.crs.to_epsg()])
                     else:
                         if isinstance(field_type, list):
-                            if not isinstance(value, Sequence) or isinstance(value, str):
-                                statement = f'? = ANY({field})'
+                            if not isinstance(value, Sequence) or isinstance(
+                                value, str
+                            ):
+                                statement = f"? = ANY({field})"
                             else:
                                 if fields is None:
                                     with self.connection:
                                         cursor = self.connection.cursor()
-                                        fields = database_table_fields(cursor, self.name)
+                                        fields = database_table_fields(
+                                            cursor, self.name
+                                        )
                                 field_type = fields[field]
-                                dimensions = field_type.count('_')
-                                field_type = field_type.strip('_')
-                                statement = f'{field} = ?::{field_type}{"[]" * dimensions}'
+                                dimensions = field_type.count("_")
+                                field_type = field_type.strip("_")
+                                statement = (
+                                    f'{field} = ?::{field_type}{"[]" * dimensions}'
+                                )
                         elif value is None:
-                            statement = f'{field} IS ?'
+                            statement = f"{field} IS ?"
                         elif isinstance(value, Sequence) and not isinstance(value, str):
                             statement = f'{field} IN ({", ".join("?" for _ in value)})'
-                        elif isinstance(value, str) and '%' in value:
-                            statement = f'UPPER({field}) LIKE ?'
+                        elif isinstance(value, str) and "%" in value:
+                            statement = f"UPPER({field}) LIKE ?"
                             value = value.upper()
                         else:
                             if isinstance(value, datetime) or isinstance(value, date):
-                                value = f'{value:%Y-%m-%d %H:%M:%S}'
-                            statement = f'{field} = ?'
+                                value = f"{value:%Y-%m-%d %H:%M:%S}"
+                            statement = f"{field} = ?"
                         if isinstance(value, Sequence) and not isinstance(value, str):
                             where_values.extend(value)
                         else:
                             where_values.append(value)
                         where_clause.append(statement)
-                where_clause = ' AND '.join(where_clause)
+                where_clause = " AND ".join(where_clause)
             else:
-                where_clause = ' AND '.join(where)
+                where_clause = " AND ".join(where)
 
             if len(where_values) == 0:
                 where_values = None
@@ -544,7 +573,7 @@ def database_tables(cursor: Cursor) -> List[str]:
     :return: list of table names
     """
 
-    cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table';")
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     return [record[0] for record in cursor.fetchall()]
 
 
@@ -569,5 +598,5 @@ def database_table_fields(cursor: Cursor, table: str) -> Dict[str, str]:
     :return: mapping of column names to the SQLite data type
     """
 
-    cursor.execute(f'PRAGMA table_info({table});')
+    cursor.execute(f"PRAGMA table_info({table});")
     return {record[1]: record[2] for record in cursor.fetchall()}
