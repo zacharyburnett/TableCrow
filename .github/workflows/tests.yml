@@ -34,38 +34,14 @@ jobs:
           cache-dependency-path: 'pyproject.toml'
       - run: pip install tox
       - run: tox -e ${{ matrix.toxenv }}
-  test_sqlite:
+  test:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     needs: [ check ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        toxenv: [ test-sqlite-xdist ]
-        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
-        os: [ ubuntu-latest ]
-    steps:
-      - run: |
-          sudo apt install libsqlite3-mod-spatialite 
-          sudo ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: 'pyproject.toml'
-      - run: pip install tox
-      - run: tox -e ${{ matrix.toxenv }}
-  test_postgres:
-    name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ check ]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        toxenv: [ test-postgres-xdist ]
+        toxenv: [ test-xdist ]
         python-version: [ '3.8', '3.9', '3.10', '3.11' ]
         os: [ ubuntu-latest ]
     services:
@@ -141,7 +117,7 @@ jobs:
           POSTGRES_PASSWORD: test_password
   test_with_coverage:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ test_sqlite, test_postgres, test_spatial ]
+    needs: [ test, test_spatial ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -164,7 +140,7 @@ jobs:
           --health-retries 5
     steps:
       - run: |
-          sudo apt install libsqlite3-mod-spatialite 
+          sudo apt install libsqlite libsqlite3-mod-spatialite
           sudo ln -sf /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
       - uses: actions/checkout@v3
         with:
