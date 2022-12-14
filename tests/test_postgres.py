@@ -80,6 +80,8 @@ def connection() -> psycopg2.connect:
     if port is None:
         port = PostGresTable.DEFAULT_PORT
 
+    print(CREDENTIALS)
+
     connector = partial(
         psycopg2.connect,
         database=CREDENTIALS["postgres"]["database"],
