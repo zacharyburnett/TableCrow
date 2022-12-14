@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toxenv: [ check-style ]
+        toxenv: [ check-style, check-build ]
         python-version: [ '3.x' ]
         os: [ ubuntu-latest ]
     steps:
@@ -176,23 +176,3 @@ jobs:
           file: ./coverage.xml
           flags: unit
           fail_ci_if_error: true
-  build:
-    name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ check ]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        toxenv: [ build-twine ]
-        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
-        os: [ ubuntu-latest, macos-latest ]
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: 'pyproject.toml'
-      - run: pip install tox
-      - run: tox -e ${{ matrix.toxenv }}
