@@ -119,7 +119,7 @@ jobs:
           POSTGRES_PASSWORD: test_password
   test_with_coverage:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    needs: [ test, test_spatial ]
+    needs: [ check ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
