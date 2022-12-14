@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toxenv: [ test-xdist ]
+        toxenv: [ test ]
         python-version: [ '3.8', '3.9', '3.10', '3.11' ]
         os: [ ubuntu-latest ]
     services:
@@ -77,7 +77,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toxenv: [ test-spatial-xdist ]
+        toxenv: [ test-spatial ]
         python-version: [ '3.8', '3.9', '3.10', '3.11' ]
         os: [ ubuntu-latest ]
     services:
@@ -118,7 +118,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toxenv: [ test-sqlite-postgres-spatial-xdist-cov ]
+        toxenv: [ test-sqlite-postgres-spatial-cov ]
         python-version: [ '3.x' ]
         os: [ ubuntu-latest ]
     services:
