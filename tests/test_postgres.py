@@ -37,7 +37,6 @@ default_credentials = {
 for credential, details in default_credentials.items():
     if credential not in CREDENTIALS["postgres"]:
         CREDENTIALS["postgres"][credential] = os.getenv(*details)
-        print(f'{credential} - {CREDENTIALS["postgres"][credential]}')
 
 if (
     "ssh_hostname" in CREDENTIALS["postgres"]
