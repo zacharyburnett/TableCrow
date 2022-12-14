@@ -48,8 +48,8 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: test_database
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: postgres
         ports:
           - 5432:5432
         options: >-
@@ -70,9 +70,9 @@ jobs:
       - run: tox -e ${{ matrix.toxenv }}
         env:
           POSTGRES_HOST: localhost
-          POSTGRES_DB: test_database
+          POSTGRES_DB: postgres
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: test_password
+          POSTGRES_PASSWORD: ''
   test_spatial:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     needs: [ check ]
@@ -87,8 +87,8 @@ jobs:
       postgres:
         image: postgis/postgis
         env:
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: test_database
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: postgres
         ports:
           - 5432:5432
         options: >-
@@ -112,9 +112,9 @@ jobs:
       - run: tox -e ${{ matrix.toxenv }}
         env:
           POSTGRES_HOST: localhost
-          POSTGRES_DB: test_database
+          POSTGRES_DB: postgres
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: test_password
+          POSTGRES_PASSWORD: ''
   test_with_coverage:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     needs: [ test, test_spatial ]
@@ -129,8 +129,8 @@ jobs:
       postgres:
         image: postgis/postgis
         env:
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: test_database
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: postgres
         ports:
           - 5432:5432
         options: >-
@@ -154,9 +154,9 @@ jobs:
       - run: tox -e ${{ matrix.toxenv }}
         env:
           POSTGRES_HOST: localhost
-          POSTGRES_DB: test_database
+          POSTGRES_DB: postgres
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: test_password
+          POSTGRES_PASSWORD: ''
       - if: ${{ contains(matrix.toxenv,'-cov') }}
         uses: codecov/codecov-action@v3
         with:
