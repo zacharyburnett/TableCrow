@@ -142,7 +142,7 @@ def test_table_creation(connection):
 
 @pytest.mark.postgres
 @pytest.mark.spatial
-def test_table_creation(connection):
+def test_table_creation_spatial(connection):
     table_name = "test_table_creation"
 
     fields = {

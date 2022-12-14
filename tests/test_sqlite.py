@@ -73,7 +73,7 @@ def test_table_creation():
 
 @pytest.mark.sqlite
 @pytest.mark.spatial
-def test_table_creation():
+def test_table_creation_spatial():
     table_name = "test_table_creation"
 
     fields = {
