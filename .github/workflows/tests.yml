@@ -48,8 +48,9 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: test_password
           POSTGRES_DB: test_database
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
         ports:
           - 5432:5432
         options: >-
@@ -87,8 +88,9 @@ jobs:
       postgres:
         image: postgis/postgis
         env:
-          POSTGRES_PASSWORD: test_password
           POSTGRES_DB: test_database
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
         ports:
           - 5432:5432
         options: >-
@@ -129,8 +131,9 @@ jobs:
       postgres:
         image: postgis/postgis
         env:
-          POSTGRES_PASSWORD: test_password
           POSTGRES_DB: test_database
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
         ports:
           - 5432:5432
         options: >-
