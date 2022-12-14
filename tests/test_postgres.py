@@ -37,6 +37,7 @@ default_credentials = {
 for credential, details in default_credentials.items():
     if credential not in CREDENTIALS["postgres"]:
         CREDENTIALS["postgres"][credential] = os.getenv(*details)
+        print(f'{credential} - {CREDENTIALS["postgres"][credential]}')
 
 if (
     "ssh_hostname" in CREDENTIALS["postgres"]
@@ -79,8 +80,6 @@ def connection() -> psycopg2.connect:
     hostname, port = split_hostname_port(CREDENTIALS["postgres"]["hostname"])
     if port is None:
         port = PostGresTable.DEFAULT_PORT
-
-    print(CREDENTIALS)
 
     connector = partial(
         psycopg2.connect,
