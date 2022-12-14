@@ -88,6 +88,11 @@ jobs:
           cache-dependency-path: 'pyproject.toml'
       - run: pip install tox
       - run: tox -e ${{ matrix.toxenv }}
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_DB: test_database
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test_password
   test_spatial:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     needs: [ check ]
@@ -121,6 +126,11 @@ jobs:
           cache-dependency-path: 'pyproject.toml'
       - run: pip install tox
       - run: tox -e ${{ matrix.toxenv }}
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_DB: test_database
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test_password
   test_with_coverage:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     needs: [ test_sqlite, test_postgres, test_spatial ]
@@ -155,9 +165,9 @@ jobs:
       - run: pip install tox
       - run: tox -e ${{ matrix.toxenv }}
         env:
-          POSTGRES_HOSTNAME: localhost
-          POSTGRES_DATABASE: test_database
-          POSTGRES_USERNAME: postgres
+          POSTGRES_HOST: localhost
+          POSTGRES_DB: test_database
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: test_password
       - if: ${{ contains(matrix.toxenv,'-cov') }}
         uses: codecov/codecov-action@v3

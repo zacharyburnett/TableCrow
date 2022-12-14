@@ -25,12 +25,12 @@ if "postgres" not in CREDENTIALS:
     CREDENTIALS["postgres"] = {}
 
 default_credentials = {
-    "hostname": ("POSTGRES_HOSTNAME", "localhost"),
-    "database": ("POSTGRES_DATABASE", "postgres"),
-    "username": ("POSTGRES_USERNAME", "postgres"),
+    "hostname": ("POSTGRES_HOST", "localhost"),
+    "database": ("POSTGRES_DB", "postgres"),
+    "username": ("POSTGRES_USER", "postgres"),
     "password": ("POSTGRES_PASSWORD", ""),
-    "ssh_hostname": ("SSH_HOSTNAME", None),
-    "ssh_username": ("SSH_USERNAME", None),
+    "ssh_hostname": ("SSH_HOST", None),
+    "ssh_username": ("SSH_USER", None),
     "ssh_password": ("SSH_PASSWORD", None),
 }
 
