@@ -26,9 +26,9 @@ if "postgres" not in CREDENTIALS:
 
 default_credentials = {
     "hostname": ("POSTGRES_HOST", "localhost"),
-    "database": ("POSTGRES_DB", "postgres"),
-    "username": ("POSTGRES_USER", "postgres"),
-    "password": ("POSTGRES_PASSWORD", ""),
+    "database": ("POSTGRES_DB", "test_database"),
+    "username": ("POSTGRES_USER", "test_user"),
+    "password": ("POSTGRES_PASSWORD", "test_password"),
     "ssh_hostname": ("SSH_HOST", None),
     "ssh_username": ("SSH_USER", None),
     "ssh_password": ("SSH_PASSWORD", None),
