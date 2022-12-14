@@ -110,6 +110,43 @@ def test_table_creation(connection):
         "field_2": float,
         "field_3": str,
         "field_4": [str],
+    }
+
+    with connection:
+        with connection.cursor() as cursor:
+            if database_has_table(cursor, table_name):
+                cursor.execute(f"DROP TABLE {table_name};")
+
+    table = PostGresTable(
+        table_name=table_name,
+        fields=fields,
+        primary_key="primary_key_field",
+        **CREDENTIALS["postgres"],
+    )
+
+    test_remote_fields = table.remote_fields
+
+    with connection:
+        with connection.cursor() as cursor:
+            test_raw_remote_fields = database_table_fields(cursor, table_name)
+            if table.exists:
+                table.delete_table()
+                table_exists = database_has_table(cursor, table_name)
+                if table_exists:
+                    cursor.execute(f"DROP TABLE {table_name};")
+
+    assert sorted(test_remote_fields) == sorted(fields)
+    assert sorted(test_raw_remote_fields) == sorted(fields)
+    assert not table_exists
+
+
+@pytest.mark.postgres
+@pytest.mark.spatial
+def test_table_creation(connection):
+    table_name = "test_table_creation"
+
+    fields = {
+        "primary_key_field": int,
         "field_5": Point,
         "field_6": MultiPolygon,
     }

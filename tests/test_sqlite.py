@@ -41,6 +41,43 @@ def test_table_creation():
         "field_3": datetime,
         "field_4": date,
         "field_5": bool,
+    }
+
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        if database_has_table(cursor, table_name):
+            cursor.execute(f"DROP TABLE {table_name};")
+
+    table = SQLiteTable(
+        table_name=table_name,
+        fields=fields,
+        primary_key="primary_key_field",
+        **CREDENTIALS["sqlite"],
+    )
+
+    test_remote_fields = table.remote_fields
+
+    with sqlite_connection() as connection:
+        cursor = connection.cursor()
+        test_raw_remote_fields = database_table_fields(cursor, table_name)
+        if table.exists:
+            table.delete_table()
+            table_exists = database_has_table(cursor, table_name)
+            if table_exists:
+                cursor.execute(f"DROP TABLE {table_name};")
+
+    assert test_remote_fields == fields
+    assert list(test_raw_remote_fields) == list(fields)
+    assert not table_exists
+
+
+@pytest.mark.sqlite
+@pytest.mark.spatial
+def test_table_creation():
+    table_name = "test_table_creation"
+
+    fields = {
+        "primary_key_field": int,
         "field_6": Point,
         "field_7": MultiPolygon,
     }

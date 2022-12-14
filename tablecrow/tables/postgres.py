@@ -238,6 +238,8 @@ class PostGresTable(DatabaseTable):
 
     @property
     def connection(self) -> connection:
+        print(f'creds = {self._DatabaseTable__password}')
+
         connector = partial(
             psycopg2.connect,
             database=self.database,
