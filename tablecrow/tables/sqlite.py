@@ -72,6 +72,7 @@ class SQLiteTable(DatabaseTable):
                 self._DatabaseTable__primary_key = list(self.fields)[0]
 
         if len(self.geometry_fields) > 0:
+            print(self.geometry_fields)
             self.connection.enable_load_extension(True)
 
             try:
