@@ -2,7 +2,7 @@
 name = 'tablecrow'
 description = 'abstract interface with remote database table'
 authors = [{ name = 'Zach Burnett', email = 'zachary.r.burnett@gmail.com' }]
-readme = { file = 'README.md', content-type = 'test/x-rst' }
+readme = 'README.md'
 requires-python = '>=3.8'
 license = { file = 'LICENSE' }
 dependencies = [
