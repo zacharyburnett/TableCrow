@@ -6,53 +6,33 @@ readme = 'README.md'
 requires-python = '>=3.8'
 license = { file = 'LICENSE' }
 dependencies = [
-    'psycopg2-binary',
-    'pyproj',
-    'python-dateutil',
-    'shapely',
-    'spatialite',
-    'sshtunnel',
-    'typepigeon >=1.0.2'
+  'psycopg2-binary',
+  'pyproj',
+  'python-dateutil',
+  'shapely',
+  'spatialite',
+  'sshtunnel',
+  'typepigeon>=2.0.1',
 ]
 dynamic = ['version']
 
 [project.optional-dependencies]
-test = [
-    'pytest',
-]
-docs = [
-    'dunamai',
-    'm2r2',
-    'sphinx',
-    'sphinx-rtd-theme',
-]
+test = ['pytest']
+docs = ['dunamai', 'm2r2', 'sphinx', 'sphinx-rtd-theme']
 
 [project.urls]
 repository = 'https://github.com/zacharyburnett/TableCrow.git'
 documentation = 'https://tablecrow.readthedocs.io'
 
 [build-system]
-requires = [
-    'setuptools >=61',
-    'setuptools_scm[toml] >=3.4',
-    'wheel',
-]
+requires = ['setuptools >=61', 'setuptools_scm[toml] >=3.4', 'wheel']
 build-backend = 'setuptools.build_meta'
 
 [tool.setuptools_scm]
 
 [tool.pytest.ini_options]
-markers = [
-    "spatial",
-    "postgres",
-    "sqlite",
-]
-norecursedirs = [
-    'build',
-    '.eggs',
-    'venv',
-    '.tox',
-]
+markers = ["spatial", "postgres", "sqlite"]
+norecursedirs = ['build', '.eggs', 'venv', '.tox']
 
 [tool.ruff]
 ignore = ["E501", "E722"]

@@ -12,7 +12,7 @@ from psycopg2._psycopg import connection
 from pyproj import CRS
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry, GEOMETRY_TYPES
 from sshtunnel import SSHTunnelForwarder
-from typepigeon import guard_generic_alias
+from typepigeon import subscripted_type
 
 from tablecrow.tables.base import (
     DatabaseTable,
@@ -20,7 +20,7 @@ from tablecrow.tables.base import (
     random_open_tcp_port,
 )
 
-from ..utilities import parse_hostname, split_hostname_port
+from tablecrow.utilities import parse_hostname, split_hostname_port
 
 SSH_DEFAULT_PORT = 22
 
@@ -269,7 +269,7 @@ class PostGresTable(DatabaseTable):
 
         schema = []
         for field, field_type in self.fields.items():
-            field_type = guard_generic_alias(field_type)
+            field_type = subscripted_type(field_type)
 
             if field_type in [list, tuple, Sequence, Collection]:
                 field_type = [typing_get_args(field_type[0])]

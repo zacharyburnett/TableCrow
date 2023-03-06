@@ -8,7 +8,7 @@ from typing import Any, Dict, Generator, List, Mapping, Sequence, Union
 from pyproj import CRS
 from shapely.geometry import LinearRing, MultiPolygon, Polygon
 from shapely.geometry.base import BaseGeometry, GEOMETRY_TYPES
-from typepigeon import convert_value
+from typepigeon import to_type
 
 from tablecrow.utilities import get_logger, parse_hostname
 
@@ -531,5 +531,5 @@ def parse_record_values(
     for field, value in record.items():
         if field in field_types:
             field_type = field_types[field]
-            record[field] = convert_value(value, field_type)
+            record[field] = to_type(value, field_type)
     return record
