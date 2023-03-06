@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toxenv: [ check-style, check-build ]
+        toxenv: [ check-style, build-dist ]
         python-version: [ '3.x' ]
         os: [ ubuntu-latest ]
     steps:
@@ -42,20 +42,6 @@ jobs:
         toxenv: [ test ]
         python-version: [ '3.8', '3.9', '3.10', '3.11' ]
         os: [ ubuntu-latest ]
-    services:
-      postgres:
-        image: postgres
-        env:
-          POSTGRES_DB: test_database
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_USER: test_user
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -65,11 +51,6 @@ jobs:
           cache-dependency-path: 'pyproject.toml'
       - run: pip install tox
       - run: tox -e ${{ matrix.toxenv }}
-        env:
-          POSTGRES_HOST: localhost
-          POSTGRES_DB: test_database
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
   test_spatial:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     needs: [ check ]
@@ -80,20 +61,6 @@ jobs:
         toxenv: [ test-spatial ]
         python-version: [ '3.8', '3.9', '3.10', '3.11' ]
         os: [ ubuntu-latest ]
-    services:
-      postgres:
-        image: postgis/postgis
-        env:
-          POSTGRES_DB: test_database
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - run: |
           sudo apt install libsqlite3-mod-spatialite
@@ -106,11 +73,6 @@ jobs:
           cache-dependency-path: 'pyproject.toml'
       - run: pip install tox
       - run: tox -e ${{ matrix.toxenv }}
-        env:
-          POSTGRES_HOST: localhost
-          POSTGRES_DB: test_database
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
   test_with_coverage:
     name: ${{ matrix.toxenv }} (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     needs: [ check ]
