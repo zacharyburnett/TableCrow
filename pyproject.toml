@@ -34,5 +34,3 @@ build-backend = 'setuptools.build_meta'
 markers = ["spatial", "postgres", "sqlite"]
 norecursedirs = ['build', '.eggs', 'venv', '.tox']
 
-[tool.ruff]
-ignore = ["E501", "E722"]
